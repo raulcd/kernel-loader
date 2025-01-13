@@ -4,7 +4,7 @@ project(arrow_kernel_loader)
 
 option(ARROW_LINK_SHARED "Link to the Arrow shared library" ON)
 # Find Arrow libraries
-find_package(Arrow REQUIRED CONFIG)
+find_package(Arrow REQUIRED)
 
 # Include directories
 include_directories(${ARROW_INCLUDE_DIR})
