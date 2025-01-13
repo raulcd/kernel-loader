@@ -35,5 +35,4 @@ jobs:
       - name: Test Python
         shell: bash -el {0}
         run: |
-          which python
           python test_load.py

@@ -10,3 +10,4 @@ array1 = pa.array([1,2])
 result = pc.call_function("custom_add", [array1, array1])
 
 assert result == pa.array([2, 4])
+print(result)
