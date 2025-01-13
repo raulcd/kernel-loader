@@ -28,8 +28,8 @@ jobs:
           environment-file: ci/environment.yml
           environment-name: kernel-loader
       - name: Configure CMake
-        run: 
-          ls -lrt $(micromamba info --base)/envs/kernel-loader/lib/cmake
+        run: |
+          ls -lrt $(micromamba info --base)/envs/kernel-loader/lib/cmake 
           cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/tmp/kernel-loader -DARROW_LINK_SHARED=ON -DCMAKE_PREFIX_PATH=$(micromamba info --base)/envs/kernel-loader/lib/cmake
       - name: Build
         run: cmake --build build --target install
