@@ -3,7 +3,7 @@ import pyarrow as pa
 import pyarrow.compute as pc
 
 # Load the shared library
-lib = ctypes.CDLL('/tmp/kernel-loader/libarrow_kernel_loader.so')
+lib = ctypes.CDLL('/home/runner/work/kernel-loader/kernel-loader/build/libarrow_kernel_loader.so')
 res = lib.LoadKernels()
 assert res == 0
 array1 = pa.array([1,2])
