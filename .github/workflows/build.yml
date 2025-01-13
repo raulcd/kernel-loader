@@ -29,7 +29,7 @@ jobs:
           environment-name: kernel-loader
       - name: Build Kernel Loader
         run: |
-          ci/scripts/build_kernel_loader.sh /tmp/kernel-loader /home/runner/micromamba/envs/kernel-loader/lib/cmake
+          ci/scripts/build_kernel_loader.sh ${pwd} /home/runner/micromamba/envs/kernel-loader/lib/cmake
       - name: Test Python
         shell: bash
         run: python test_load.py
