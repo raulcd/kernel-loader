@@ -3,7 +3,7 @@ set -eux
 source_dir=${1}
 build_dir=${1}/build
 
-LOADER_CMAKE_PREFIX_PATH=${2}
+LOADER_CMAKE_PREFIX_PATH=${2:-}
 
 mkdir -p ${build_dir}
 pushd ${build_dir}
