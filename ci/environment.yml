@@ -2,5 +2,6 @@ name: kernel-loader
 channels:
   - conda-forge
 dependencies:
+  - compilers
   - libarrow==15
   - pyarrow==15
