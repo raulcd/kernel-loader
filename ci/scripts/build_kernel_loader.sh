@@ -11,7 +11,7 @@ pushd ${build_dir}
 cmake \
     -DCMAKE_INSTALL_PREFIX=/tmp/kernel-loader \
     -DARROW_LINK_SHARED=ON \
-    -DCMAKE_PREFIX_PATH=${LOADER_CMAKE_PREFIX_PATH:-}
+    -DCMAKE_PREFIX_PATH=${LOADER_CMAKE_PREFIX_PATH:-} \
     ${source_dir}
 cmake --build . --target install
 
