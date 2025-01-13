@@ -30,6 +30,9 @@ jobs:
           activate-environment: kernel-loader
           environment-file: ci/environment.yml
           auto-activate-base: false
+      - run: |
+          conda info
+          conda list
       - name: Build
         shell: bash
         run: ci/scripts/build_kernel_loader.sh $(pwd)
