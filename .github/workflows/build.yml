@@ -32,7 +32,7 @@ jobs:
           auto-activate-base: false
       - name: Build
         shell: bash
-        run: ci/scripts/build_kernel_loader.sh ${pwd}
+        run: ci/scripts/build_kernel_loader.sh $(pwd)
       - name: Test Python
         shell: bash
         run: python test_load.py
