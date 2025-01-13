@@ -27,7 +27,9 @@ jobs:
         with:
           environment-file: ci/environment.yml
           environment-name: kernel-loader
+          init-shell: bash
       - name: Build Kernel Loader
+        shell: bash
         run: |
           ci/scripts/build_kernel_loader.sh $(pwd) /home/runner/micromamba/envs/kernel-loader/lib/cmake
       - name: Test Python
