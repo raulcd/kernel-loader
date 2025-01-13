@@ -23,13 +23,10 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
-      - name: Setup conda environment
-        uses: conda-incubator/setup-miniconda@v3
+      - uses: mamba-org/setup-micromamba@v2
         with:
           environment-file: ci/environment.yml
-      - run: |
-          conda info
-          conda list
+          environment-name: kernel-loader
       - name: Build
         shell: bash
         run: ci/scripts/build_kernel_loader.sh $(pwd)
