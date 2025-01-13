@@ -1,4 +1,3 @@
-name: kernel-loader
 channels:
   - conda-forge
 dependencies:
