@@ -29,10 +29,7 @@ jobs:
           environment-name: kernel-loader
       - name: Configure CMake
         run: |
-          ls -lrt /home/runner/micromamba/envs/kernel-loader/lib/cmake 
-          cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/tmp/kernel-loader -DARROW_LINK_SHARED=ON -DCMAKE_PREFIX_PATH=/home/runner/micromamba/envs/kernel-loader/lib/cmake
-      - name: Build
-        run: cmake --build build --target install
+          ci/scripts/build_kernel_loader.sh /tmp/kernel-loader /home/runner/micromamba/envs/kernel-loader/lib/cmake
       - name: Test Python
         shell: bash
         run: python test_load.py
