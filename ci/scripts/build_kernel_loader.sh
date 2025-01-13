@@ -5,7 +5,7 @@ build_dir=${1}/build
 
 LOADER_CMAKE_PREFIX_PATH=${2:-}
 
-mkdir ${build_dir}
+mkdir -p ${build_dir}
 pushd ${build_dir}
 
 cmake \

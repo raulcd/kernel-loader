@@ -27,7 +27,7 @@ jobs:
         with:
           environment-file: ci/environment.yml
           environment-name: kernel-loader
-      - name: Configure CMake
+      - name: Build Kernel Loader
         run: |
           ci/scripts/build_kernel_loader.sh /tmp/kernel-loader /home/runner/micromamba/envs/kernel-loader/lib/cmake
       - name: Test Python
