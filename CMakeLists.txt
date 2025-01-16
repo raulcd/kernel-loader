@@ -12,7 +12,7 @@ include_directories(${CMAKE_SOURCE_DIR}/src)
 
 # Add source files
 add_library(arrow_kernel_loader SHARED
-        #src/vendored/api_vector.cc
+        src/vendored/api_vector.cc
         src/vendored/vector_rank.cc
         src/load_kernels.h
         src/load_kernels.cc)
