@@ -11,3 +11,6 @@ result = pc.call_function("custom_add", [array1, array1])
 
 assert result == pa.array([2, 4])
 print(result)
+
+result = pc.call_function("rank_percentile", array1)
+print(result)

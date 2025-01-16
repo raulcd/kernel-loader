@@ -3,6 +3,7 @@ set -eux
 source_dir=${1}
 build_dir=${1}/build
 
+rm -rf ${build_dir}
 mkdir -p ${build_dir}
 pushd ${build_dir}
 

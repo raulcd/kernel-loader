@@ -1,6 +1,7 @@
 #include <arrow/api.h>
 #include <arrow/compute/api.h>
 #include "load_kernels.h"
+#include "vendored/vector_rank.h"
 
 namespace arrow {
     namespace compute {
@@ -34,6 +35,8 @@ namespace arrow {
 
             // Add kernel implementation
             ARROW_RETURN_NOT_OK(registry->AddFunction(std::move(func)));
+            internal::RegisterVectorRank(registry);
+            //ARROW_RETURN_NOT_OK(registry->AddFunction(std::make_shared<arrow::compute::internal::rank::RankPercentileMetaFunction>()));
 
             return arrow::Status::OK();
         }
