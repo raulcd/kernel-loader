@@ -1,5 +1,5 @@
 #include "vendored/api_vector.h"
-//#include "vendored/function_internal.h"
+#include "vendored/function_internal.h"
 #include "arrow/compute/api_scalar.h"
 #include "arrow/compute/ordering.h"
 #include "vendored/vector_sort_internal.h"
@@ -16,10 +16,9 @@ using compute::NullPlacement;
     arrow::internal::DataMember("null_placement", &RankPercentileOptions::null_placement),
     arrow::internal::DataMember("factor", &RankPercentileOptions::factor));
 }  // namespace internal
-
 RankPercentileOptions::RankPercentileOptions(std::vector<SortKey> sort_keys,
                                              NullPlacement null_placement, double factor)
-    : FunctionOptions(kRankPercentileOptionsType),
+    : FunctionOptions(arrow::compute::internal::kRankPercentileOptionsType),
       sort_keys(std::move(sort_keys)),
       null_placement(null_placement),
       factor(factor) {}

@@ -28,8 +28,6 @@
 namespace arrow {
 namespace compute {
 
-class ExecContext;
-
 /// \brief Percentile rank options
 class ARROW_EXPORT RankPercentileOptions : public FunctionOptions {
  public:
