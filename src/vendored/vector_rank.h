@@ -3,17 +3,17 @@
 #include <arrow/compute/function_options.h>
 
 namespace arrow::compute::internal {
-    class ARROW_EXPORT RankPercentileOptions : public FunctionOptions {
+    class ARROW_EXPORT RankQuantileOptions : public FunctionOptions {
  public:
- explicit RankPercentileOptions(std::vector<SortKey> sort_keys = {},
+ explicit RankQuantileOptions(std::vector<SortKey> sort_keys = {},
                                  double factor = 1.0);
   /// Convenience constructor for array inputs
-  explicit RankPercentileOptions(SortOrder order,
+  explicit RankQuantileOptions(SortOrder order,
                                  double factor = 1.0)
-      : RankPercentileOptions({SortKey("", order)}, factor) {}
+      : RankQuantileOptions({SortKey("", order)}, factor) {}
 
-  static constexpr char const kTypeName[] = "RankPercentileOptions";
-  static RankPercentileOptions Defaults() { return RankPercentileOptions(); }
+  static constexpr char const kTypeName[] = "RankQuantileOptions";
+  static RankQuantileOptions Defaults() { return RankQuantileOptions(); }
 
   /// Column key(s) to order by and how to order by these sort keys.
   std::vector<SortKey> sort_keys;
