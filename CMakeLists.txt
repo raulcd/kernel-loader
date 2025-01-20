@@ -8,11 +8,13 @@ find_package(Arrow REQUIRED)
 
 # Include directories
 include_directories(${ARROW_INCLUDE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 # Add source files
-add_library(arrow_kernel_loader SHARED src/load_kernels.cc
-        src/load_kernels.cc
-        src/load_kernels.h)
+add_library(arrow_kernel_loader SHARED
+        src/vendored/function_internal.cc
+        src/vendored/vector_rank.cc
+        src/load_kernels.cc)
 
 # Link Arrow libraries
 if(ARROW_LINK_SHARED)
