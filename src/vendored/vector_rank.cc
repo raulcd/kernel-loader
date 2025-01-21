@@ -6,7 +6,7 @@
 #include <vendored/vector_sort_internal.h>
 #include <vendored/codegen_internal.h>
 #include "arrow/util/logging.h"
-#include <iostream>
+
 namespace arrow {
 
 namespace internal {
@@ -48,6 +48,7 @@ using compute::NullPlacement;
         factor(factor) {}
 
 constexpr char RankQuantileOptions::kTypeName[];
+
 namespace
 {
 
@@ -100,7 +101,7 @@ template <typename ArrowType>
 Result<NullPartitionResult> DoSortAndMarkDuplicate(
     ExecContext* ctx, uint64_t* indices_begin, uint64_t* indices_end, const Array& input,
     const std::shared_ptr<DataType>& physical_type, const SortOrder order,
-    bool needs_duplicates) {
+    const NullPlacement null_placement, bool needs_duplicates) {
   using GetView = GetViewType<ArrowType>;
   using ArrayType = typename TypeTraits<ArrowType>::ArrayType;
 
@@ -109,7 +110,7 @@ Result<NullPartitionResult> DoSortAndMarkDuplicate(
   ArrayType array(input.data());
   ARROW_ASSIGN_OR_RAISE(auto sorted,
                         array_sorter(indices_begin, indices_end, array, 0,
-                                     ArraySortOptions(order, NullPlacement::AtStart), ctx));
+                                     ArraySortOptions(order, null_placement), ctx));
    if (needs_duplicates) {
     auto value_selector = [&array](int64_t index) {
       return GetView::LogicalValue(array.GetView(index));
@@ -124,13 +125,14 @@ class SortAndMarkDuplicate : public TypeVisitor {
  public:
   SortAndMarkDuplicate(ExecContext* ctx, uint64_t* indices_begin, uint64_t* indices_end,
                        const InputType& input, const SortOrder order,
-                       const bool needs_duplicate)
+                       const NullPlacement null_placement, const bool needs_duplicate)
       : TypeVisitor(),
         ctx_(ctx),
         indices_begin_(indices_begin),
         indices_end_(indices_end),
         input_(input),
         order_(order),
+        null_placement_(null_placement),
         needs_duplicates_(needs_duplicate),
         physical_type_(GetPhysicalType(input.type())) {}
 
@@ -144,7 +146,7 @@ class SortAndMarkDuplicate : public TypeVisitor {
     ARROW_ASSIGN_OR_RAISE(                                                          \
         sorted_, DoSortAndMarkDuplicate<TYPE>(ctx_, indices_begin_, indices_end_,   \
                                               input_, physical_type_, order_,       \
-                                              needs_duplicates_));                  \
+                                              null_placement_, needs_duplicates_)); \
     return Status::OK();                                                            \
   }
 
@@ -158,6 +160,7 @@ class SortAndMarkDuplicate : public TypeVisitor {
   uint64_t* indices_end_;
   const InputType& input_;
   const SortOrder order_;
+  const NullPlacement null_placement_;
   const bool needs_duplicates_;
   const std::shared_ptr<DataType> physical_type_;
   NullPartitionResult sorted_{};
@@ -166,7 +169,6 @@ class SortAndMarkDuplicate : public TypeVisitor {
 template <typename Derived>
 class RankMetaFunctionBase : public MetaFunction {
  public:
- using FunctionOptionsType = RankQuantileOptions;
   using MetaFunction::MetaFunction;
 
   Result<Datum> ExecuteImpl(const std::vector<Datum>& args,
@@ -197,7 +199,6 @@ class RankMetaFunctionBase : public MetaFunction {
     }
 
     int64_t length = input.length();
-    std::cout << "Input length to Rank: " << length << std::endl;
     ARROW_ASSIGN_OR_RAISE(auto indices,
                           MakeMutableUInt64Array(length, ctx->memory_pool()));
     auto* indices_begin = indices->GetMutableValues<uint64_t>(1);
@@ -206,7 +207,7 @@ class RankMetaFunctionBase : public MetaFunction {
     auto needs_duplicates = Derived::NeedsDuplicates(options);
     ARROW_ASSIGN_OR_RAISE(
         auto sorted, SortAndMarkDuplicate(ctx, indices_begin, indices_end, input, order,
-                                          needs_duplicates)
+                                          options.null_placement, needs_duplicates)
                          .Run());
 
     auto ranker = Derived::GetRanker(options);
@@ -226,7 +227,6 @@ struct QuantileRanker {
   explicit QuantileRanker(double factor) : factor_(factor) {}
 
   Result<Datum> CreateRankings(ExecContext* ctx, const NullPartitionResult& sorted) {
-    std::cout << "CreateRankings" << std::endl;
     const int64_t length = sorted.overall_end() - sorted.overall_begin();
     ARROW_ASSIGN_OR_RAISE(auto rankings,
                           MakeMutableFloat64Array(length, ctx->memory_pool()));
@@ -272,6 +272,7 @@ const RankQuantileOptions* GetDefaultQuantileRankOptions() {
     class RankQuantileMetaFunction : public RankMetaFunctionBase<RankQuantileMetaFunction>
     {
         public:
+        using FunctionOptionsType = RankQuantileOptions;
         using RankerType = QuantileRanker;
         static bool NeedsDuplicates(const RankQuantileOptions&) { return true; }
         static RankerType GetRanker(const RankQuantileOptions& options) {
