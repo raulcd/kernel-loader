@@ -38,6 +38,36 @@ namespace
      "in RankQuantileOptions."),
     {"input"}, "RankQuantileOptions");
 
+// A bit that is set in the sort indices when the value at the current sort index
+// is the same as the value at the previous sort index.
+constexpr uint64_t kDuplicateMask = 1ULL << 63;
+
+template <typename ValueSelector>
+void MarkDuplicates(const NullPartitionResult& sorted, ValueSelector&& value_selector) {
+  using T = decltype(value_selector(int64_t{}));
+
+  // Process non-nulls
+  if (sorted.non_nulls_end != sorted.non_nulls_begin) {
+    auto it = sorted.non_nulls_begin;
+    T prev_value = value_selector(*it);
+    while (++it < sorted.non_nulls_end) {
+      T curr_value = value_selector(*it);
+      if (curr_value == prev_value) {
+        *it |= kDuplicateMask;
+      }
+      prev_value = curr_value;
+    }
+  }
+
+  // Process nulls
+  if (sorted.nulls_end != sorted.nulls_begin) {
+    // TODO this should be able to distinguish between NaNs and real nulls (GH-45193)
+    auto it = sorted.nulls_begin;
+    while (++it < sorted.nulls_end) {
+      *it |= kDuplicateMask;
+    }
+  }
+}
 
 
 template <typename ArrowType>
@@ -54,14 +84,13 @@ Result<NullPartitionResult> DoSortAndMarkDuplicate(
   ARROW_ASSIGN_OR_RAISE(auto sorted,
                         array_sorter(indices_begin, indices_end, array, 0,
                                      ArraySortOptions(order, NullPlacement::AtStart), ctx));
-    /*if (needs_duplicates) {
+   if (needs_duplicates) {
     auto value_selector = [&array](int64_t index) {
       return GetView::LogicalValue(array.GetView(index));
     };
     MarkDuplicates(sorted, value_selector);
-  }*/
+  }
   return sorted;
-  //return NullPartitionResult{};
 }
 
 template <typename InputType>
@@ -164,7 +193,8 @@ inline Result<std::shared_ptr<ArrayData>> MakeMutableFloat64Array(
   ARROW_ASSIGN_OR_RAISE(auto data, AllocateBuffer(buffer_size, memory_pool));
   return ArrayData::Make(float64(), length, {nullptr, std::move(data)}, /*null_count=*/0);
 }
-constexpr uint64_t kDuplicateMask = 1ULL << 63;
+
+
 // A helper class that emits rankings for the "rank_quantile" function
 struct QuantileRanker {
   explicit QuantileRanker(double factor) : factor_(factor) {}
@@ -222,7 +252,7 @@ const RankQuantileOptions* GetDefaultQuantileRankOptions() {
             return RankerType(options.factor);
         }
           RankQuantileMetaFunction()
-      : RankMetaFunctionBase("rank_quantile", Arity::Unary(), rank_quantile_doc,
+      : RankMetaFunctionBase("vendored_rank_quantile", Arity::Unary(), rank_quantile_doc,
                              GetDefaultQuantileRankOptions()) {}
 
     };
