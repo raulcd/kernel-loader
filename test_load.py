@@ -12,5 +12,5 @@ result = pc.call_function("custom_add", [array1, array1])
 assert result == pa.array([4, 2, 4])
 print(result)
 
-result = pc.call_function("rank_quantile", [array1])
+result = pc.call_function("vendored_rank_quantile", [array1])
 print(f"Rank Quantile: {result}")
