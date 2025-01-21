@@ -12,13 +12,24 @@ namespace arrow::compute::internal {
 
 using NullPartitionResult = GenericNullPartitionResult<uint64_t>;
 
-       static auto kRankQuantileOptionsType = GetFunctionOptionsType<RankQuantileOptions>(
-            arrow::internal::DataMember("sort_keys", &RankQuantileOptions::sort_keys),
-    arrow::internal::DataMember("factor", &RankQuantileOptions::factor));
+    static auto kRankQuantileOptionsType = GetFunctionOptionsType<RankQuantileOptions>(
+      arrow::internal::DataMember("sort_keys", &RankQuantileOptions::sort_keys),
+      /*
 
-    RankQuantileOptions::RankQuantileOptions(std::vector<SortKey> sort_keys, double factor)
+       TODO: Requires fixing. It fails to compile with:
+
+      no matching function for call to
+      ‘GenericToScalar(const arrow::internal::DataMemberProperty<arrow::compute::internal::RankQuantileOptions,
+                       arrow::compute::NullPlacement>::Type&)’
+      */
+      // arrow::internal::DataMember("null_placement", &RankQuantileOptions::null_placement),
+      arrow::internal::DataMember("factor", &RankQuantileOptions::factor));
+
+    RankQuantileOptions::RankQuantileOptions(std::vector<SortKey> sort_keys,
+                                             NullPlacement null_placement, double factor)
     : FunctionOptions(internal::kRankQuantileOptionsType),
         sort_keys(std::move(sort_keys)),
+        null_placement(null_placement),
         factor(factor) {}
 
 constexpr char RankQuantileOptions::kTypeName[];
