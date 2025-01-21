@@ -7,22 +7,37 @@
 #include <vendored/codegen_internal.h>
 #include "arrow/util/logging.h"
 #include <iostream>
-namespace arrow::compute::internal {
+namespace arrow {
+
+namespace internal {
+
+using compute::NullPlacement;
+  template <>
+struct EnumTraits<NullPlacement>
+    : BasicEnumTraits<NullPlacement, NullPlacement::AtStart, NullPlacement::AtEnd> {
+  static std::string name() { return "NullPlacement"; }
+  static std::string value_name(NullPlacement value) {
+    switch (value) {
+      case NullPlacement::AtStart:
+        return "AtStart";
+      case NullPlacement::AtEnd:
+        return "AtEnd";
+    }
+    return "<INVALID>";
+  }
+};
+
+}
+
+namespace compute::internal {
 
 
 using NullPartitionResult = GenericNullPartitionResult<uint64_t>;
+using compute::NullPlacement;
 
     static auto kRankQuantileOptionsType = GetFunctionOptionsType<RankQuantileOptions>(
       arrow::internal::DataMember("sort_keys", &RankQuantileOptions::sort_keys),
-      /*
-
-       TODO: Requires fixing. It fails to compile with:
-
-      no matching function for call to
-      ‘GenericToScalar(const arrow::internal::DataMemberProperty<arrow::compute::internal::RankQuantileOptions,
-                       arrow::compute::NullPlacement>::Type&)’
-      */
-      // arrow::internal::DataMember("null_placement", &RankQuantileOptions::null_placement),
+      arrow::internal::DataMember("null_placement", &RankQuantileOptions::null_placement),
       arrow::internal::DataMember("factor", &RankQuantileOptions::factor));
 
     RankQuantileOptions::RankQuantileOptions(std::vector<SortKey> sort_keys,
@@ -274,4 +289,5 @@ void RegisterVectorRank(FunctionRegistry* registry) {
   //DCHECK_OK(registry->AddFunction(std::make_shared<RankMetaFunction>()));
   DCHECK_OK(registry->AddFunction(std::make_shared<RankQuantileMetaFunction>()));
 }
-}  // namespace arrow::compute::internal
+}  // namespace arrow
+} //namespace compute::internal
