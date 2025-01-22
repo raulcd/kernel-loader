@@ -1,7 +1,7 @@
 #include <arrow/api.h>
 #include <arrow/compute/api.h>
 #include "load_kernels.h"
-#include "vendored/vector_rank.h"
+#include "arrow/compute/kernels/vector_rank.h"
 
 namespace arrow {
     namespace compute {

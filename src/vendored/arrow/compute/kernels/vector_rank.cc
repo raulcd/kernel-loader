@@ -1,10 +1,10 @@
-#include "vendored/vector_rank.h"
+#include <arrow/compute/kernels/vector_rank.h>
 #include <arrow/compute/function.h>
 #include <arrow/compute/function_options.h>
-#include <vendored/function_internal.h>
-#include <vendored/reflection_internal.h>
-#include <vendored/vector_sort_internal.h>
-#include <vendored/codegen_internal.h>
+#include <arrow/compute/function_internal.h>
+#include <arrow/util/reflection_internal.h>
+#include <arrow/compute/kernels/vector_sort_internal.h>
+#include <arrow/compute/kernels/codegen_internal.h>
 #include "arrow/util/logging.h"
 
 namespace arrow {

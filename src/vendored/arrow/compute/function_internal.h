@@ -32,7 +32,7 @@
 #include "arrow/status.h"
 #include "arrow/util/checked_cast.h"
 #include "arrow/util/key_value_metadata.h"
-#include "vendored/reflection_internal.h"
+#include "arrow/util/reflection_internal.h"
 #include "arrow/util/string.h"
 #include "arrow/util/visibility.h"
 
