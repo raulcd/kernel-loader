@@ -164,7 +164,6 @@ class SortAndMarkDuplicate : public TypeVisitor {
   NullPartitionResult sorted_{};
 };
 
-
 // A helper class that emits rankings for the "rank_quantile" function
 struct QuantileRanker {
   explicit QuantileRanker(double factor) : factor_(factor) {}
@@ -384,7 +383,7 @@ class RankQuantileMetaFunction : public RankMetaFunctionBase<RankQuantileMetaFun
       : RankMetaFunctionBase("vendored_rank_quantile", Arity::Unary(), rank_quantile_doc,
                              GetDefaultQuantileRankOptions()) {}
 };
-    
+
 }  // namespace
 
 void RegisterVectorRank(FunctionRegistry* registry) {
