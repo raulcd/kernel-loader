@@ -10,14 +10,16 @@ find_package(Arrow REQUIRED)
 include_directories(${ARROW_INCLUDE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/vendored)
+include_directories(${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/)
 
+message(STATUS "CMAKE_BINARY_DIR: ${CMAKE_BINARY_DIR}")
 # Add source files
 add_library(arrow_kernel_loader SHARED
-        src/vendored/arrow/compute/kernels/chunked_internal.cc
-        src/vendored/arrow/chunk_resolver.cc
-        src/vendored/arrow/compute/api_vector.cc
-        src/vendored/arrow/compute/function_internal.cc
-        src/vendored/arrow/compute/kernels/vector_rank.cc
+        ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/kernels/chunked_internal.cc
+        ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/chunk_resolver.cc
+        ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/api_vector.cc
+        ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/function_internal.cc
+        ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/kernels/vector_rank.cc
         src/load_kernels.cc)
 
 # Link Arrow libraries
