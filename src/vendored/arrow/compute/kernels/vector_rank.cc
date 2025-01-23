@@ -240,13 +240,6 @@ class RankMetaFunctionBase : public MetaFunction {
     return ranker.CreateRankings(ctx, sorted);
   }
 };
-inline Result<std::shared_ptr<ArrayData>> MakeMutableFloat64Array(
-    int64_t length, MemoryPool* memory_pool) {
-  auto buffer_size = length * sizeof(double);
-  ARROW_ASSIGN_OR_RAISE(auto data, AllocateBuffer(buffer_size, memory_pool));
-  return ArrayData::Make(float64(), length, {nullptr, std::move(data)}, /*null_count=*/0);
-}
-
 
 // A helper class that emits rankings for the "rank_quantile" function
 struct QuantileRanker {
