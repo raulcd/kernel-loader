@@ -1,69 +1,35 @@
-#include <arrow/compute/kernels/vector_rank.h>
-#include <arrow/compute/function.h>
-#include <arrow/compute/function_options.h>
-#include <arrow/compute/function_internal.h>
-#include <arrow/util/reflection_internal.h>
-#include <arrow/compute/kernels/vector_sort_internal.h>
-#include <arrow/compute/kernels/codegen_internal.h>
-#include "arrow/util/logging.h"
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
 
-namespace arrow {
+#include <functional>
+#include <memory>
 
-namespace internal {
+#include "arrow/compute/function.h"
+#include "arrow/compute/kernels/vector_sort_internal.h"
+#include "arrow/compute/registry.h"
 
-using compute::NullPlacement;
-  template <>
-struct EnumTraits<NullPlacement>
-    : BasicEnumTraits<NullPlacement, NullPlacement::AtStart, NullPlacement::AtEnd> {
-  static std::string name() { return "NullPlacement"; }
-  static std::string value_name(NullPlacement value) {
-    switch (value) {
-      case NullPlacement::AtStart:
-        return "AtStart";
-      case NullPlacement::AtEnd:
-        return "AtEnd";
-    }
-    return "<INVALID>";
-  }
-};
+namespace arrow::compute::internal {
 
-}
+using ::arrow::util::span;
 
-namespace compute::internal {
+namespace {
 
-
-using NullPartitionResult = GenericNullPartitionResult<uint64_t>;
-using compute::NullPlacement;
-
-    static auto kRankQuantileOptionsType = GetFunctionOptionsType<RankQuantileOptions>(
-      arrow::internal::DataMember("sort_keys", &RankQuantileOptions::sort_keys),
-      arrow::internal::DataMember("null_placement", &RankQuantileOptions::null_placement),
-      arrow::internal::DataMember("factor", &RankQuantileOptions::factor));
-
-    RankQuantileOptions::RankQuantileOptions(std::vector<SortKey> sort_keys,
-                                             NullPlacement null_placement, double factor)
-    : FunctionOptions(internal::kRankQuantileOptionsType),
-        sort_keys(std::move(sort_keys)),
-        null_placement(null_placement),
-        factor(factor) {}
-
-constexpr char RankQuantileOptions::kTypeName[];
-
-namespace
-{
-
-    const FunctionDoc rank_quantile_doc(
-    "Compute quantile ranks of an array",
-    ("This function computes a quantile rank of the input array.\n"
-     "By default, null values are considered greater than any other value and\n"
-     "are therefore sorted at the end of the input. For floating-point types,\n"
-     "NaNs are considered greater than any other non-null value, but smaller\n"
-     "than null values.\n"
-     "Results are computed as in https://en.wikipedia.org/wiki/Percentile_rank\n"
-     "\n"
-     "The handling of nulls and NaNs, and the constant factor can be changed\n"
-     "in RankQuantileOptions."),
-    {"input"}, "RankQuantileOptions");
+// ----------------------------------------------------------------------
+// Rank implementation
 
 // A bit that is set in the sort indices when the value at the current sort index
 // is the same as the value at the previous sort index.
@@ -96,6 +62,15 @@ void MarkDuplicates(const NullPartitionResult& sorted, ValueSelector&& value_sel
   }
 }
 
+const RankOptions* GetDefaultRankOptions() {
+  static const auto kDefaultRankOptions = RankOptions::Defaults();
+  return &kDefaultRankOptions;
+}
+
+const RankQuantileOptions* GetDefaultQuantileRankOptions() {
+  static const auto kDefaultQuantileRankOptions = RankQuantileOptions::Defaults();
+  return &kDefaultQuantileRankOptions;
+}
 
 template <typename ArrowType>
 Result<NullPartitionResult> DoSortAndMarkDuplicate(
@@ -111,7 +86,8 @@ Result<NullPartitionResult> DoSortAndMarkDuplicate(
   ARROW_ASSIGN_OR_RAISE(auto sorted,
                         array_sorter(indices_begin, indices_end, array, 0,
                                      ArraySortOptions(order, null_placement), ctx));
-   if (needs_duplicates) {
+
+  if (needs_duplicates) {
     auto value_selector = [&array](int64_t index) {
       return GetView::LogicalValue(array.GetView(index));
     };
@@ -134,7 +110,7 @@ Result<NullPartitionResult> DoSortAndMarkDuplicate(
                                          physical_chunks, order, null_placement));
   if (needs_duplicates) {
     const auto arrays = GetArrayPointers(physical_chunks);
-    auto value_selector = [resolver = ChunkedArrayResolver(arrow::util::span(arrays))](int64_t index) {
+    auto value_selector = [resolver = ChunkedArrayResolver(span(arrays))](int64_t index) {
       return resolver.Resolve(index).Value<ArrowType>();
     };
     MarkDuplicates(sorted, value_selector);
@@ -187,6 +163,141 @@ class SortAndMarkDuplicate : public TypeVisitor {
   const std::shared_ptr<DataType> physical_type_;
   NullPartitionResult sorted_{};
 };
+
+
+// A helper class that emits rankings for the "rank_quantile" function
+struct QuantileRanker {
+  explicit QuantileRanker(double factor) : factor_(factor) {}
+
+  Result<Datum> CreateRankings(ExecContext* ctx, const NullPartitionResult& sorted) {
+    const int64_t length = sorted.overall_end() - sorted.overall_begin();
+    ARROW_ASSIGN_OR_RAISE(auto rankings,
+                          MakeMutableFloat64Array(length, ctx->memory_pool()));
+    auto out_begin = rankings->GetMutableValues<double>(1);
+
+    auto is_duplicate = [](uint64_t index) { return (index & kDuplicateMask) != 0; };
+    auto original_index = [](uint64_t index) { return index & ~kDuplicateMask; };
+
+    // The count of values strictly less than the value being considered
+    int64_t cum_freq = 0;
+    auto it = sorted.overall_begin();
+
+    while (it < sorted.overall_end()) {
+      // Look for a run of duplicate values
+      DCHECK(!is_duplicate(*it));
+      auto run_end = it;
+      while (++run_end < sorted.overall_end() && is_duplicate(*run_end)) {
+      }
+      // The run length, i.e. the frequency of the current value
+      int64_t freq = run_end - it;
+      double quantile = (cum_freq + 0.5 * freq) * factor_ / static_cast<double>(length);
+      // Output quantile rank values
+      for (; it < run_end; ++it) {
+        out_begin[original_index(*it)] = quantile;
+      }
+      cum_freq += freq;
+    }
+    DCHECK_EQ(cum_freq, length);
+    return Datum(rankings);
+  }
+
+ private:
+  const double factor_;
+};
+
+// A helper class that emits rankings for the "rank" function
+struct OrdinalRanker {
+  explicit OrdinalRanker(RankOptions::Tiebreaker tiebreaker) : tiebreaker_(tiebreaker) {}
+
+  Result<Datum> CreateRankings(ExecContext* ctx, const NullPartitionResult& sorted) {
+    const int64_t length = sorted.overall_end() - sorted.overall_begin();
+    ARROW_ASSIGN_OR_RAISE(auto rankings,
+                          MakeMutableUInt64Array(length, ctx->memory_pool()));
+    auto out_begin = rankings->GetMutableValues<uint64_t>(1);
+    uint64_t rank;
+
+    auto is_duplicate = [](uint64_t index) { return (index & kDuplicateMask) != 0; };
+    auto original_index = [](uint64_t index) { return index & ~kDuplicateMask; };
+
+    switch (tiebreaker_) {
+      case RankOptions::Dense: {
+        rank = 0;
+        for (auto it = sorted.overall_begin(); it < sorted.overall_end(); ++it) {
+          if (!is_duplicate(*it)) {
+            ++rank;
+          }
+          out_begin[original_index(*it)] = rank;
+        }
+        break;
+      }
+
+      case RankOptions::First: {
+        rank = 0;
+        for (auto it = sorted.overall_begin(); it < sorted.overall_end(); it++) {
+          // No duplicate marks expected for RankOptions::First
+          DCHECK(!is_duplicate(*it));
+          out_begin[*it] = ++rank;
+        }
+        break;
+      }
+
+      case RankOptions::Min: {
+        rank = 0;
+        for (auto it = sorted.overall_begin(); it < sorted.overall_end(); ++it) {
+          if (!is_duplicate(*it)) {
+            rank = (it - sorted.overall_begin()) + 1;
+          }
+          out_begin[original_index(*it)] = rank;
+        }
+        break;
+      }
+
+      case RankOptions::Max: {
+        rank = length;
+        for (auto it = sorted.overall_end() - 1; it >= sorted.overall_begin(); --it) {
+          out_begin[original_index(*it)] = rank;
+          // If the current index isn't marked as duplicate, then it's the last
+          // tie in a row (since we iterate in reverse order), so update rank
+          // for the next row of ties.
+          if (!is_duplicate(*it)) {
+            rank = it - sorted.overall_begin();
+          }
+        }
+        break;
+      }
+    }
+
+    return Datum(rankings);
+  }
+
+ private:
+  const RankOptions::Tiebreaker tiebreaker_;
+};
+
+const FunctionDoc rank_doc(
+    "Compute ordinal ranks of an array (1-based)",
+    ("This function computes a rank of the input array.\n"
+     "By default, null values are considered greater than any other value and\n"
+     "are therefore sorted at the end of the input. For floating-point types,\n"
+     "NaNs are considered greater than any other non-null value, but smaller\n"
+     "than null values. The default tiebreaker is to assign ranks in order of\n"
+     "when ties appear in the input.\n"
+     "\n"
+     "The handling of nulls, NaNs and tiebreakers can be changed in RankOptions."),
+    {"input"}, "RankOptions");
+
+const FunctionDoc rank_quantile_doc(
+    "Compute quantile ranks of an array",
+    ("This function computes a quantile rank of the input array.\n"
+     "By default, null values are considered greater than any other value and\n"
+     "are therefore sorted at the end of the input. For floating-point types,\n"
+     "NaNs are considered greater than any other non-null value, but smaller\n"
+     "than null values.\n"
+     "Results are computed as in https://en.wikipedia.org/wiki/Quantile_rank\n"
+     "\n"
+     "The handling of nulls and NaNs, and the constant factor can be changed\n"
+     "in RankQuantileOptions."),
+    {"input"}, "RankQuantileOptions");
 
 template <typename Derived>
 class RankMetaFunctionBase : public MetaFunction {
@@ -241,73 +352,44 @@ class RankMetaFunctionBase : public MetaFunction {
   }
 };
 
-// A helper class that emits rankings for the "rank_quantile" function
-struct QuantileRanker {
-  explicit QuantileRanker(double factor) : factor_(factor) {}
+class RankMetaFunction : public RankMetaFunctionBase<RankMetaFunction> {
+ public:
+  using FunctionOptionsType = RankOptions;
+  using RankerType = OrdinalRanker;
 
-  Result<Datum> CreateRankings(ExecContext* ctx, const NullPartitionResult& sorted) {
-    const int64_t length = sorted.overall_end() - sorted.overall_begin();
-    ARROW_ASSIGN_OR_RAISE(auto rankings,
-                          MakeMutableFloat64Array(length, ctx->memory_pool()));
-    auto out_begin = rankings->GetMutableValues<double>(1);
-
-    auto is_duplicate = [](uint64_t index) { return (index & kDuplicateMask) != 0; };
-    auto original_index = [](uint64_t index) { return index & ~kDuplicateMask; };
-
-    // The count of values strictly less than the value being considered
-    int64_t cum_freq = 0;
-    auto it = sorted.overall_begin();
-
-    while (it < sorted.overall_end()) {
-      // Look for a run of duplicate values
-      DCHECK(!is_duplicate(*it));
-      auto run_end = it;
-      while (++run_end < sorted.overall_end() && is_duplicate(*run_end)) {
-      }
-      // The run length, i.e. the frequency of the current value
-      int64_t freq = run_end - it;
-      double quantile = (cum_freq + 0.5 * freq) * factor_ / static_cast<double>(length);
-      // Output quantile rank values
-      for (; it < run_end; ++it) {
-        out_begin[original_index(*it)] = quantile;
-      }
-      cum_freq += freq;
-    }
-    DCHECK_EQ(cum_freq, length);
-    return Datum(rankings);
+  static bool NeedsDuplicates(const RankOptions& options) {
+    return options.tiebreaker != RankOptions::First;
   }
 
- private:
-  const double factor_;
+  static RankerType GetRanker(const RankOptions& options) {
+    return RankerType(options.tiebreaker);
+  }
+
+  RankMetaFunction()
+      : RankMetaFunctionBase("vendored_rank", Arity::Unary(), rank_doc, GetDefaultRankOptions()) {}
 };
 
-const RankQuantileOptions* GetDefaultQuantileRankOptions() {
-  static const auto kDefaultQuantileRankOptions = RankQuantileOptions::Defaults();
-  return &kDefaultQuantileRankOptions;
-}
+class RankQuantileMetaFunction : public RankMetaFunctionBase<RankQuantileMetaFunction> {
+ public:
+  using FunctionOptionsType = RankQuantileOptions;
+  using RankerType = QuantileRanker;
 
+  static bool NeedsDuplicates(const RankQuantileOptions&) { return true; }
 
+  static RankerType GetRanker(const RankQuantileOptions& options) {
+    return RankerType(options.factor);
+  }
 
-    class RankQuantileMetaFunction : public RankMetaFunctionBase<RankQuantileMetaFunction>
-    {
-        public:
-        using FunctionOptionsType = RankQuantileOptions;
-        using RankerType = QuantileRanker;
-        static bool NeedsDuplicates(const RankQuantileOptions&) { return true; }
-        static RankerType GetRanker(const RankQuantileOptions& options) {
-            return RankerType(options.factor);
-        }
-          RankQuantileMetaFunction()
+  RankQuantileMetaFunction()
       : RankMetaFunctionBase("vendored_rank_quantile", Arity::Unary(), rank_quantile_doc,
                              GetDefaultQuantileRankOptions()) {}
-
-    };
+};
     
-} // namespace
+}  // namespace
 
 void RegisterVectorRank(FunctionRegistry* registry) {
-  //DCHECK_OK(registry->AddFunction(std::make_shared<RankMetaFunction>()));
+  DCHECK_OK(registry->AddFunction(std::make_shared<RankMetaFunction>()));
   DCHECK_OK(registry->AddFunction(std::make_shared<RankQuantileMetaFunction>()));
 }
-}  // namespace arrow
-} //namespace compute::internal
+
+}  // namespace arrow::compute::internal
