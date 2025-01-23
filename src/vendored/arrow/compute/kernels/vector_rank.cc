@@ -120,6 +120,28 @@ Result<NullPartitionResult> DoSortAndMarkDuplicate(
   return sorted;
 }
 
+template <typename ArrowType>
+Result<NullPartitionResult> DoSortAndMarkDuplicate(
+    ExecContext* ctx, uint64_t* indices_begin, uint64_t* indices_end,
+    const ChunkedArray& input, const std::shared_ptr<DataType>& physical_type,
+    const SortOrder order, const NullPlacement null_placement, bool needs_duplicates) {
+  auto physical_chunks = GetPhysicalChunks(input, physical_type);
+  if (physical_chunks.empty()) {
+    return NullPartitionResult{};
+  }
+  ARROW_ASSIGN_OR_RAISE(auto sorted,
+                        SortChunkedArray(ctx, indices_begin, indices_end, physical_type,
+                                         physical_chunks, order, null_placement));
+  if (needs_duplicates) {
+    const auto arrays = GetArrayPointers(physical_chunks);
+    auto value_selector = [resolver = ChunkedArrayResolver(arrow::util::span(arrays))](int64_t index) {
+      return resolver.Resolve(index).Value<ArrowType>();
+    };
+    MarkDuplicates(sorted, value_selector);
+  }
+  return sorted;
+}
+
 template <typename InputType>
 class SortAndMarkDuplicate : public TypeVisitor {
  public:
@@ -178,6 +200,9 @@ class RankMetaFunctionBase : public MetaFunction {
       case Datum::ARRAY: {
         return Rank(*args[0].make_array(), *options, ctx);
       } break;
+      case Datum::CHUNKED_ARRAY: {
+        return Rank(*args[0].chunked_array(), *options, ctx);
+      } break;
       default:
         break;
     }
@@ -186,6 +211,7 @@ class RankMetaFunctionBase : public MetaFunction {
         "values=",
         args[0].ToString());
   }
+
  protected:
   template <typename T>
   Result<Datum> Rank(const T& input, const FunctionOptions& function_options,
