@@ -13,6 +13,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/vendored)
 
 # Add source files
 add_library(arrow_kernel_loader SHARED
+        src/vendored/arrow/compute/kernels/chunked_internal.cc
+        src/vendored/arrow/chunk_resolver.cc
         src/vendored/arrow/compute/function_internal.cc
         src/vendored/arrow/compute/kernels/vector_rank.cc
         src/load_kernels.cc)
