@@ -2,6 +2,6 @@
 
 namespace vendored_arrow::compute::internal {
 
-void RegisterVectorRank(FunctionRegistry* registry);
+void RegisterVectorRank(arrow::compute::FunctionRegistry* registry);
 
 }  // namespace vendored_arrow::compute::internal

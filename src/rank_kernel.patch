@@ -152,10 +152,62 @@ index 2a492f581f..0832399be4 100644
        return Generator<Type0, Decimal128Type, Args...>::Exec;
      case Type::DECIMAL256:
 diff --git a/cpp/src/arrow/compute/kernels/vector_rank.cc b/cpp/src/arrow/compute/kernels/vector_rank.cc
-index da785eaf2d..9125990519 100644
+index 2efc61c2e6..064261bc17 100644
 --- a/cpp/src/arrow/compute/kernels/vector_rank.cc
 +++ b/cpp/src/arrow/compute/kernels/vector_rank.cc
-@@ -365,7 +365,7 @@ class RankMetaFunction : public RankMetaFunctionBase<RankMetaFunction> {
+@@ -24,6 +24,51 @@
+ 
+ namespace arrow::compute::internal {
+ 
++using ::arrow::Array;
++using ::arrow::BinaryType;
++using ::arrow::BooleanType;
++using ::arrow::ChunkedArray;
++using ::arrow::DataType;
++using ::arrow::Datum;
++using ::arrow::Decimal128Type;
++using ::arrow::Decimal256Type;
++using ::arrow::DoubleType;
++using ::arrow::FixedSizeBinaryType;
++using ::arrow::FloatType;
++using ::arrow::Int8Type;
++using ::arrow::Int16Type;
++using ::arrow::Int32Type;
++using ::arrow::Int64Type;
++using ::arrow::LargeBinaryType;
++using ::arrow::Result;
++using ::arrow::Status;
++using ::arrow::TypeTraits;
++using ::arrow::TypeVisitor;
++using ::arrow::UInt8Type;
++using ::arrow::UInt16Type;
++using ::arrow::UInt32Type;
++using ::arrow::UInt64Type;
++using ::arrow::internal::checked_cast;
++using ::arrow::compute::Arity;
++using ::arrow::compute::ArraySortOptions;
++using ::arrow::compute::ExecContext;
++using ::arrow::compute::FunctionDoc;
++using ::arrow::compute::FunctionOptions;
++using ::arrow::compute::FunctionRegistry;
++using ::arrow::compute::MetaFunction;
++using ::arrow::compute::NullPlacement;
++using ::arrow::compute::RankQuantileOptions;
++using ::arrow::compute::RankOptions;
++using ::arrow::compute::SortOrder;
++using ::arrow::compute::internal::ChunkedArrayResolver;
++using ::arrow::compute::internal::GetArrayPointers;
++using ::arrow::compute::internal::GetArraySorter;
++using ::arrow::compute::internal::GetPhysicalChunks;
++using ::arrow::compute::internal::GetViewType;
++using ::arrow::compute::internal::MakeMutableFloat64Array;
++using ::arrow::compute::internal::MakeMutableUInt64Array;
++using ::arrow::compute::internal::NullPartitionResult;
++using ::arrow::compute::internal::SortChunkedArray;
+ using ::arrow::util::span;
+ 
+ namespace {
+@@ -361,7 +362,7 @@ class RankMetaFunction : public RankMetaFunctionBase<RankMetaFunction> {
    }
  
    RankMetaFunction()
@@ -164,8 +216,8 @@ index da785eaf2d..9125990519 100644
  };
  
  class RankQuantileMetaFunction : public RankMetaFunctionBase<RankQuantileMetaFunction> {
-@@ -380,7 +380,7 @@ class RankQuantileMetaFunction : public RankMetaFunctionBase<RankQuantileMetaFun
-   }
+@@ -374,7 +375,7 @@ class RankQuantileMetaFunction : public RankMetaFunctionBase<RankQuantileMetaFun
+   static RankerType GetRanker(const RankQuantileOptions& options) { return RankerType(); }
  
    RankQuantileMetaFunction()
 -      : RankMetaFunctionBase("rank_quantile", Arity::Unary(), rank_quantile_doc,

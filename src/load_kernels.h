@@ -3,7 +3,7 @@
 
 namespace vendored_arrow {
     namespace compute {
-        Status LoadKernels(FunctionRegistry* registry);
+        arrow::Status LoadKernels(arrow::compute::FunctionRegistry* registry);
     }  // namespace compute
 }  // namespace vendored_arrow
 

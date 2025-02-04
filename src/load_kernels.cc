@@ -5,6 +5,18 @@
 
 namespace vendored_arrow {
     namespace compute {
+        using arrow::int64;
+        using arrow::Status;
+        using arrow::compute::Arity;
+        using arrow::compute::ExecResult;
+        using arrow::compute::ExecSpan;
+        using arrow::compute::FunctionDoc;
+        using arrow::compute::FunctionRegistry;
+        using arrow::compute::KernelContext;
+        using arrow::compute::KernelSignature;
+        using arrow::compute::ScalarFunction;
+        using arrow::compute::ScalarKernel;
+
         Status ExecAddInt32(KernelContext* ctx, const ExecSpan& batch, ExecResult* out) {
             const int32_t* left_data = batch[0].array.GetValues<int32_t>(1);
             const int32_t* right_data = batch[1].array.GetValues<int32_t>(1);
@@ -14,6 +26,7 @@ namespace vendored_arrow {
             }
             return Status::OK();
         }
+
         Status ExecAddInt64(KernelContext* ctx, const ExecSpan& batch, ExecResult* out) {
             const int64_t* left_data = batch[0].array.GetValues<int64_t>(1);
             const int64_t* right_data = batch[1].array.GetValues<int64_t>(1);
@@ -23,6 +36,7 @@ namespace vendored_arrow {
             }
             return Status::OK();
         }
+
         Status LoadKernels(FunctionRegistry* registry) {
             // Define and register custom compute functions
             auto func = std::make_shared<ScalarFunction>("custom_add", Arity::Binary(),
@@ -44,7 +58,7 @@ namespace vendored_arrow {
 }  // namespace vendored_arrow
 
 extern "C" int LoadKernels() {
-    auto status = arrow::compute::LoadKernels(arrow::compute::GetFunctionRegistry());
+    auto status = vendored_arrow::compute::LoadKernels(arrow::compute::GetFunctionRegistry());
     if (!status.ok()) {
       return -1;
     } else {
