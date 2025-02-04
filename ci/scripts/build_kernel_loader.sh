@@ -43,12 +43,6 @@ mv arrow_tmp/arrow-${sha}/cpp/src/arrow/chunk_resolver.h arrow_vendored/cpp/src/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/codegen_internal.h arrow_vendored/cpp/src/arrow/compute/kernels/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/vector_rank.cc arrow_vendored/cpp/src/arrow/compute/kernels/
 
-# This renames all namespaces but it causes a much bigger diff
-#find . -type f -exec sed -i 's/namespace arrow/namespace vendored_arrow/g' {} +
-
-# Rename the namespace to avoid conflicts
-sed -i 's/namespace arrow/namespace vendored_arrow/g' arrow_vendored/cpp/src/arrow/compute/kernels/vector_rank.cc
-
 # Build the kernel loader
 cmake \
     -DCMAKE_INSTALL_PREFIX=/tmp/kernel-loader \
