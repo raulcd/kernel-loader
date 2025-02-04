@@ -3,19 +3,7 @@
 #include "load_kernels.h"
 #include "arrow/compute/kernels/vector_rank.h"
 
-namespace vendored_arrow {
-    namespace compute {
-        using arrow::int64;
-        using arrow::Status;
-        using arrow::compute::Arity;
-        using arrow::compute::ExecResult;
-        using arrow::compute::ExecSpan;
-        using arrow::compute::FunctionDoc;
-        using arrow::compute::FunctionRegistry;
-        using arrow::compute::KernelContext;
-        using arrow::compute::KernelSignature;
-        using arrow::compute::ScalarFunction;
-        using arrow::compute::ScalarKernel;
+namespace arrow::compute::internal::vendored {
 
         Status ExecAddInt32(KernelContext* ctx, const ExecSpan& batch, ExecResult* out) {
             const int32_t* left_data = batch[0].array.GetValues<int32_t>(1);
@@ -49,16 +37,14 @@ namespace vendored_arrow {
 
             // Add kernel implementation
             ARROW_RETURN_NOT_OK(registry->AddFunction(std::move(func)));
-            internal::RegisterVectorRank(registry);
+            RegisterVectorRank(registry);
 
             return arrow::Status::OK();
         }
-
-    }  // namespace compute
-}  // namespace vendored_arrow
+}  // namespace arrow::compute::internal::vendored
 
 extern "C" int LoadKernels() {
-    auto status = vendored_arrow::compute::LoadKernels(arrow::compute::GetFunctionRegistry());
+    auto status = arrow::compute::internal::vendored::LoadKernels(arrow::compute::GetFunctionRegistry());
     if (!status.ok()) {
       return -1;
     } else {
