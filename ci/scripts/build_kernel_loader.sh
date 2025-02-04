@@ -43,6 +43,9 @@ mv arrow_tmp/arrow-${sha}/cpp/src/arrow/chunk_resolver.h arrow_vendored/cpp/src/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/codegen_internal.h arrow_vendored/cpp/src/arrow/compute/kernels/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/vector_rank.cc arrow_vendored/cpp/src/arrow/compute/kernels/
 
+# Rename the namespace to avoid conflicts
+find . -type f -exec sed -i 's/namespace arrow/namespace vendored_arrow/g' {} +
+
 # Build the kernel loader
 cmake \
     -DCMAKE_INSTALL_PREFIX=/tmp/kernel-loader \
