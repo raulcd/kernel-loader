@@ -3,7 +3,7 @@
 #include "load_kernels.h"
 #include "arrow/compute/kernels/vector_rank.h"
 
-namespace arrow::compute::internal::vendored {
+namespace arrow::compute::vendored::internal {
 
         Status ExecAddInt32(KernelContext* ctx, const ExecSpan& batch, ExecResult* out) {
             const int32_t* left_data = batch[0].array.GetValues<int32_t>(1);
@@ -41,10 +41,10 @@ namespace arrow::compute::internal::vendored {
 
             return arrow::Status::OK();
         }
-}  // namespace arrow::compute::internal::vendored
+}  // namespace arrow::compute::vendored::internal
 
 extern "C" int LoadKernels() {
-    auto status = arrow::compute::internal::vendored::LoadKernels(arrow::compute::GetFunctionRegistry());
+    auto status = arrow::compute::vendored::internal::LoadKernels(arrow::compute::GetFunctionRegistry());
     if (!status.ok()) {
       return -1;
     } else {

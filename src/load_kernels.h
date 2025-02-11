@@ -1,9 +1,9 @@
 #ifndef LOAD_KERNELS_H
 #define LOAD_KERNELS_H
 
-namespace arrow::compute::internal::vendored {
+namespace arrow::compute::vendored::internal {
         arrow::Status LoadKernels(arrow::compute::FunctionRegistry* registry);
-}  // namespace arrow::compute::internal::vendored
+}  // namespace arrow::compute::vendored::internal
 
 extern "C" int LoadKernels();
 

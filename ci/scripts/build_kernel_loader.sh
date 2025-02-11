@@ -42,6 +42,10 @@ mv arrow_tmp/arrow-${sha}/cpp/src/arrow/chunk_resolver.cc arrow_vendored/cpp/src
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/chunk_resolver.h arrow_vendored/cpp/src/arrow/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/codegen_internal.h arrow_vendored/cpp/src/arrow/compute/kernels/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/vector_rank.cc arrow_vendored/cpp/src/arrow/compute/kernels/
+mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/vector_array_sort.cc arrow_vendored/cpp/src/arrow/compute/kernels/
+mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/vector_sort.cc arrow_vendored/cpp/src/arrow/compute/kernels/
+mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/common_internal.h arrow_vendored/cpp/src/arrow/compute/kernels/
+mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/util_internal.h arrow_vendored/cpp/src/arrow/compute/kernels/
 
 # Build the kernel loader
 cmake \
