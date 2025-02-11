@@ -10,7 +10,7 @@ pushd ${build_dir}
 mkdir arrow_tmp
 pushd arrow_tmp
 
-sha="14e45a24957f76d3aea8a594d9c308ba0dee1dd7"
+sha="d3c467625d83bd69e2b85a289f810ec5b2789d63"
 
 # Download Arrow source code
 url="https://github.com/apache/arrow/archive/${sha}.zip"
@@ -32,7 +32,6 @@ mkdir -p arrow_vendored/cpp/src/arrow/util
 
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/api_vector.cc arrow_vendored/cpp/src/arrow/compute/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/api_vector.h arrow_vendored/cpp/src/arrow/compute/
-mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/function_internal.cc arrow_vendored/cpp/src/arrow/compute/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/function_internal.h arrow_vendored/cpp/src/arrow/compute/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/chunked_internal.cc arrow_vendored/cpp/src/arrow/compute/kernels/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/util/reflection_internal.h arrow_vendored/cpp/src/arrow/util/
