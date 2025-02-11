@@ -24,6 +24,232 @@ index 3d6458167f..75f4d19b1f 100644
  
  class ChunkResolver;
  
+diff --git a/cpp/src/arrow/compute/api_vector.cc b/cpp/src/arrow/compute/api_vector.cc
+index 53ceed1b08..da356ef3fc 100644
+--- a/cpp/src/arrow/compute/api_vector.cc
++++ b/cpp/src/arrow/compute/api_vector.cc
+@@ -42,13 +42,13 @@ namespace arrow {
+ using internal::checked_cast;
+ using internal::checked_pointer_cast;
+ 
+-namespace internal {
++namespace internal::vendored {
+ 
+-using compute::DictionaryEncodeOptions;
+-using compute::FilterOptions;
++using compute::internal::vendored::DictionaryEncodeOptions;
++using compute::internal::vendored::FilterOptions;
+ using compute::NullPlacement;
+-using compute::RankOptions;
+-using compute::RankQuantileOptions;
++using compute::internal::vendored::RankOptions;
++using compute::internal::vendored::RankQuantileOptions;
+ 
+ template <>
+ struct EnumTraits<FilterOptions::NullSelectionBehavior>
+@@ -122,8 +122,9 @@ namespace compute {
+ // Function options
+ 
+ namespace internal {
++namespace vendored {
+ namespace {
+-using ::arrow::internal::DataMember;
++using ::arrow::internal::vendored::DataMember;
+ static auto kFilterOptionsType = GetFunctionOptionsType<FilterOptions>(
+     DataMember("null_selection_behavior", &FilterOptions::null_selection_behavior));
+ static auto kTakeOptionsType = GetFunctionOptionsType<TakeOptions>(
+@@ -166,67 +167,66 @@ static auto kInversePermutationOptionsType =
+ static auto kScatterOptionsType = GetFunctionOptionsType<ScatterOptions>(
+     DataMember("max_index", &ScatterOptions::max_index));
+ }  // namespace
+-}  // namespace internal
+ 
+ FilterOptions::FilterOptions(NullSelectionBehavior null_selection)
+-    : FunctionOptions(internal::kFilterOptionsType),
++    : FunctionOptions(kFilterOptionsType),
+       null_selection_behavior(null_selection) {}
+ constexpr char FilterOptions::kTypeName[];
+ 
+ TakeOptions::TakeOptions(bool boundscheck)
+-    : FunctionOptions(internal::kTakeOptionsType), boundscheck(boundscheck) {}
++    : FunctionOptions(kTakeOptionsType), boundscheck(boundscheck) {}
+ constexpr char TakeOptions::kTypeName[];
+ 
+ DictionaryEncodeOptions::DictionaryEncodeOptions(NullEncodingBehavior null_encoding)
+-    : FunctionOptions(internal::kDictionaryEncodeOptionsType),
++    : FunctionOptions(kDictionaryEncodeOptionsType),
+       null_encoding_behavior(null_encoding) {}
+ constexpr char DictionaryEncodeOptions::kTypeName[];
+ 
+ RunEndEncodeOptions::RunEndEncodeOptions(std::shared_ptr<DataType> run_end_type)
+-    : FunctionOptions(internal::kRunEndEncodeOptionsType),
++    : FunctionOptions(kRunEndEncodeOptionsType),
+       run_end_type{std::move(run_end_type)} {}
+ 
+ ArraySortOptions::ArraySortOptions(SortOrder order, NullPlacement null_placement)
+-    : FunctionOptions(internal::kArraySortOptionsType),
++    : FunctionOptions(kArraySortOptionsType),
+       order(order),
+       null_placement(null_placement) {}
+ constexpr char ArraySortOptions::kTypeName[];
+ 
+ SortOptions::SortOptions(std::vector<SortKey> sort_keys, NullPlacement null_placement)
+-    : FunctionOptions(internal::kSortOptionsType),
++    : FunctionOptions(kSortOptionsType),
+       sort_keys(std::move(sort_keys)),
+       null_placement(null_placement) {}
+ SortOptions::SortOptions(const Ordering& ordering)
+-    : FunctionOptions(internal::kSortOptionsType),
++    : FunctionOptions(kSortOptionsType),
+       sort_keys(ordering.sort_keys()),
+       null_placement(ordering.null_placement()) {}
+ constexpr char SortOptions::kTypeName[];
+ 
+ PartitionNthOptions::PartitionNthOptions(int64_t pivot, NullPlacement null_placement)
+-    : FunctionOptions(internal::kPartitionNthOptionsType),
++    : FunctionOptions(kPartitionNthOptionsType),
+       pivot(pivot),
+       null_placement(null_placement) {}
+ constexpr char PartitionNthOptions::kTypeName[];
+ 
+ SelectKOptions::SelectKOptions(int64_t k, std::vector<SortKey> sort_keys)
+-    : FunctionOptions(internal::kSelectKOptionsType),
++    : FunctionOptions(kSelectKOptionsType),
+       k(k),
+       sort_keys(std::move(sort_keys)) {}
+ constexpr char SelectKOptions::kTypeName[];
+ 
+ CumulativeOptions::CumulativeOptions(bool skip_nulls)
+-    : FunctionOptions(internal::kCumulativeOptionsType), skip_nulls(skip_nulls) {}
++    : FunctionOptions(kCumulativeOptionsType), skip_nulls(skip_nulls) {}
+ CumulativeOptions::CumulativeOptions(double start, bool skip_nulls)
+     : CumulativeOptions(std::make_shared<DoubleScalar>(start), skip_nulls) {}
+ CumulativeOptions::CumulativeOptions(std::shared_ptr<Scalar> start, bool skip_nulls)
+-    : FunctionOptions(internal::kCumulativeOptionsType),
++    : FunctionOptions(kCumulativeOptionsType),
+       start(std::move(start)),
+       skip_nulls(skip_nulls) {}
+ constexpr char CumulativeOptions::kTypeName[];
+ 
+ RankOptions::RankOptions(std::vector<SortKey> sort_keys, NullPlacement null_placement,
+                          RankOptions::Tiebreaker tiebreaker)
+-    : FunctionOptions(internal::kRankOptionsType),
++    : FunctionOptions(kRankOptionsType),
+       sort_keys(std::move(sort_keys)),
+       null_placement(null_placement),
+       tiebreaker(tiebreaker) {}
+@@ -234,28 +234,28 @@ constexpr char RankOptions::kTypeName[];
+ 
+ RankQuantileOptions::RankQuantileOptions(std::vector<SortKey> sort_keys,
+                                          NullPlacement null_placement)
+-    : FunctionOptions(internal::kRankQuantileOptionsType),
++    : FunctionOptions(kRankQuantileOptionsType),
+       sort_keys(std::move(sort_keys)),
+       null_placement(null_placement) {}
+ constexpr char RankQuantileOptions::kTypeName[];
+ 
+ PairwiseOptions::PairwiseOptions(int64_t periods)
+-    : FunctionOptions(internal::kPairwiseOptionsType), periods(periods) {}
++    : FunctionOptions(kPairwiseOptionsType), periods(periods) {}
+ constexpr char PairwiseOptions::kTypeName[];
+ 
+ ListFlattenOptions::ListFlattenOptions(bool recursive)
+-    : FunctionOptions(internal::kListFlattenOptionsType), recursive(recursive) {}
++    : FunctionOptions(kListFlattenOptionsType), recursive(recursive) {}
+ constexpr char ListFlattenOptions::kTypeName[];
+ 
+ InversePermutationOptions::InversePermutationOptions(
+     int64_t max_index, std::shared_ptr<DataType> output_type)
+-    : FunctionOptions(internal::kInversePermutationOptionsType),
++    : FunctionOptions(kInversePermutationOptionsType),
+       max_index(max_index),
+       output_type(std::move(output_type)) {}
+ constexpr char InversePermutationOptions::kTypeName[];
+ 
+ ScatterOptions::ScatterOptions(int64_t max_index)
+-    : FunctionOptions(internal::kScatterOptionsType), max_index(max_index) {}
++    : FunctionOptions(kScatterOptionsType), max_index(max_index) {}
+ constexpr char ScatterOptions::kTypeName[];
+ 
+ namespace internal {
+@@ -473,6 +473,7 @@ Result<Datum> Scatter(const Datum& values, const Datum& indices,
+                       const ScatterOptions& options, ExecContext* ctx) {
+   return CallFunction("scatter", {values, indices}, &options, ctx);
+ }
+-
++}  // namespace vendored
++}  // namespace internal
+ }  // namespace compute
+ }  // namespace arrow
+diff --git a/cpp/src/arrow/compute/api_vector.h b/cpp/src/arrow/compute/api_vector.h
+index 22bb164719..1bcc2362cc 100644
+--- a/cpp/src/arrow/compute/api_vector.h
++++ b/cpp/src/arrow/compute/api_vector.h
+@@ -30,6 +30,8 @@ namespace compute {
+ 
+ class ExecContext;
+ 
++namespace internal::vendored {
++
+ /// \addtogroup compute-concrete-options
+ /// @{
+ 
+@@ -811,5 +813,6 @@ Result<Datum> Scatter(const Datum& values, const Datum& indices,
+                       const ScatterOptions& options = ScatterOptions::Defaults(),
+                       ExecContext* ctx = NULLPTR);
+ 
++}  // namespace internal::vendored
+ }  // namespace compute
+ }  // namespace arrow
+diff --git a/cpp/src/arrow/compute/function_internal.h b/cpp/src/arrow/compute/function_internal.h
+index 9d8928466b..5f9a607ee9 100644
+--- a/cpp/src/arrow/compute/function_internal.h
++++ b/cpp/src/arrow/compute/function_internal.h
+@@ -42,6 +42,7 @@ struct StructScalar;
+ using ::arrow::internal::checked_cast;
+ 
+ namespace internal {
++namespace vendored {
+ template <>
+ struct EnumTraits<compute::SortOrder>
+     : BasicEnumTraits<compute::SortOrder, compute::SortOrder::Ascending,
+@@ -57,13 +58,14 @@ struct EnumTraits<compute::SortOrder>
+     return "<INVALID>";
+   }
+ };
++}  // namespace vendored
+ }  // namespace internal
+ 
+ namespace compute {
+ namespace internal {
+ 
+-using arrow::internal::EnumTraits;
+-using arrow::internal::has_enum_traits;
++using arrow::internal::vendored::EnumTraits;
++using arrow::internal::vendored::has_enum_traits;
+ 
+ template <typename Enum, typename CType = typename std::underlying_type<Enum>::type>
+ Result<Enum> ValidateEnumValue(CType raw) {
+@@ -656,7 +658,7 @@ template <typename Options, typename... Properties>
+ const FunctionOptionsType* GetFunctionOptionsType(const Properties&... properties) {
+   static const class OptionsType : public GenericOptionsType {
+    public:
+-    explicit OptionsType(const arrow::internal::PropertyTuple<Properties...> properties)
++    explicit OptionsType(const arrow::internal::vendored::PropertyTuple<Properties...> properties)
+         : properties_(properties) {}
+ 
+     const char* type_name() const override { return Options::kTypeName; }
+@@ -694,8 +696,8 @@ const FunctionOptionsType* GetFunctionOptionsType(const Properties&... propertie
+     }
+ 
+    private:
+-    const arrow::internal::PropertyTuple<Properties...> properties_;
+-  } instance(arrow::internal::MakeProperties(properties...));
++    const arrow::internal::vendored::PropertyTuple<Properties...> properties_;
++  } instance(arrow::internal::vendored::MakeProperties(properties...));
+   return &instance;
+ }
+ 
 diff --git a/cpp/src/arrow/compute/kernels/chunked_internal.h b/cpp/src/arrow/compute/kernels/chunked_internal.h
 index 5bc8233016..783740bfbd 100644
 --- a/cpp/src/arrow/compute/kernels/chunked_internal.h
@@ -152,10 +378,28 @@ index 2a492f581f..0832399be4 100644
        return Generator<Type0, Decimal128Type, Args...>::Exec;
      case Type::DECIMAL256:
 diff --git a/cpp/src/arrow/compute/kernels/vector_rank.cc b/cpp/src/arrow/compute/kernels/vector_rank.cc
-index 2efc61c2e6..064261bc17 100644
+index 2efc61c2e6..21fc9a3dbb 100644
 --- a/cpp/src/arrow/compute/kernels/vector_rank.cc
 +++ b/cpp/src/arrow/compute/kernels/vector_rank.cc
-@@ -361,7 +362,7 @@ class RankMetaFunction : public RankMetaFunctionBase<RankMetaFunction> {
+@@ -22,7 +22,7 @@
+ #include "arrow/compute/kernels/vector_sort_internal.h"
+ #include "arrow/compute/registry.h"
+ 
+-namespace arrow::compute::internal {
++namespace arrow::compute::internal::vendored {
+ 
+ using ::arrow::util::span;
+ 
+@@ -80,7 +80,7 @@ Result<NullPartitionResult> DoSortAndMarkDuplicate(
+   using GetView = GetViewType<ArrowType>;
+   using ArrayType = typename TypeTraits<ArrowType>::ArrayType;
+ 
+-  ARROW_ASSIGN_OR_RAISE(auto array_sorter, GetArraySorter(*physical_type));
++  ARROW_ASSIGN_OR_RAISE(auto array_sorter, arrow::compute::internal::GetArraySorter(*physical_type));
+ 
+   ArrayType array(input.data());
+   ARROW_ASSIGN_OR_RAISE(auto sorted,
+@@ -361,7 +361,7 @@ class RankMetaFunction : public RankMetaFunctionBase<RankMetaFunction> {
    }
  
    RankMetaFunction()
@@ -164,7 +408,7 @@ index 2efc61c2e6..064261bc17 100644
  };
  
  class RankQuantileMetaFunction : public RankMetaFunctionBase<RankQuantileMetaFunction> {
-@@ -374,7 +375,7 @@ class RankQuantileMetaFunction : public RankMetaFunctionBase<RankQuantileMetaFun
+@@ -374,7 +374,7 @@ class RankQuantileMetaFunction : public RankMetaFunctionBase<RankQuantileMetaFun
    static RankerType GetRanker(const RankQuantileOptions& options) { return RankerType(); }
  
    RankQuantileMetaFunction()
@@ -173,24 +417,53 @@ index 2efc61c2e6..064261bc17 100644
                               GetDefaultQuantileRankOptions()) {}
  };
  
-@@ -380,9 +380,11 @@ class RankQuantileMetaFunction : public RankMetaFunctionBase<RankQuantileMetaFun
- 
- }  // namespace
- 
-+namespace vendored {
- void RegisterVectorRank(FunctionRegistry* registry) {
-   DCHECK_OK(registry->AddFunction(std::make_shared<RankMetaFunction>()));
+@@ -385,4 +385,4 @@ void RegisterVectorRank(FunctionRegistry* registry) {
    DCHECK_OK(registry->AddFunction(std::make_shared<RankQuantileMetaFunction>()));
  }
-+}  // namespace vendored
  
- }  // namespace arrow::compute::internal
-
+-}  // namespace arrow::compute::internal
++}  // namespace arrow::compute::internal::vendored
 diff --git a/cpp/src/arrow/compute/kernels/vector_sort_internal.h b/cpp/src/arrow/compute/kernels/vector_sort_internal.h
-index 6288aa26ea..57304562c3 100644
+index 6288aa26ea..fc03e187c6 100644
 --- a/cpp/src/arrow/compute/kernels/vector_sort_internal.h
 +++ b/cpp/src/arrow/compute/kernels/vector_sort_internal.h
-@@ -761,9 +761,9 @@ struct ResolvedTableSortKey {
+@@ -31,6 +31,8 @@
+ 
+ namespace arrow::compute::internal {
+ 
++namespace vendored {
++
+ // Visit all physical types for which sorting is implemented.
+ #define VISIT_SORTABLE_PHYSICAL_TYPES(VISIT) \
+   VISIT(BooleanType)                         \
+@@ -456,26 +458,6 @@ using MergeImpl = GenericMergeImpl<uint64_t, NullPartitionResult>;
+ using ChunkedMergeImpl =
+     GenericMergeImpl<CompressedChunkLocation, ChunkedNullPartitionResult>;
+ 
+-// TODO make this usable if indices are non trivial on input
+-// (see ConcreteRecordBatchColumnSorter)
+-// `offset` is used when this is called on a chunk of a chunked array
+-using ArraySortFunc = std::function<Result<NullPartitionResult>(
+-    uint64_t* indices_begin, uint64_t* indices_end, const Array& values, int64_t offset,
+-    const ArraySortOptions& options, ExecContext* ctx)>;
+-
+-Result<ArraySortFunc> GetArraySorter(const DataType& type);
+-
+-Result<NullPartitionResult> SortChunkedArray(ExecContext* ctx, uint64_t* indices_begin,
+-                                             uint64_t* indices_end,
+-                                             const ChunkedArray& chunked_array,
+-                                             SortOrder sort_order,
+-                                             NullPlacement null_placement);
+-
+-Result<NullPartitionResult> SortChunkedArray(
+-    ExecContext* ctx, uint64_t* indices_begin, uint64_t* indices_end,
+-    const std::shared_ptr<DataType>& physical_type, const ArrayVector& physical_chunks,
+-    SortOrder sort_order, NullPlacement null_placement);
+-
+ Result<NullPartitionResult> SortStructArray(ExecContext* ctx, uint64_t* indices_begin,
+                                             uint64_t* indices_end,
+                                             const StructArray& array,
+@@ -761,9 +743,9 @@ struct ResolvedTableSortKey {
          order(order),
          null_count(null_count) {}
  
@@ -202,3 +475,54 @@ index 6288aa26ea..57304562c3 100644
      return {chunks[loc.chunk_index], loc.index_in_chunk};
    }
  
+@@ -788,7 +770,7 @@ struct ResolvedTableSortKey {
+                                   null_count);
+     };
+ 
+-    return ::arrow::compute::internal::ResolveSortKeys<ResolvedTableSortKey>(
++    return ::arrow::compute::internal::vendored::ResolveSortKeys<ResolvedTableSortKey>(
+         *table.schema(), sort_keys, factory);
+   }
+ 
+@@ -813,4 +795,22 @@ inline Result<std::shared_ptr<ArrayData>> MakeMutableFloat64Array(
+   return ArrayData::Make(float64(), length, {nullptr, std::move(data)}, /*null_count=*/0);
+ }
+ 
++}  // namespace vendored
++// TODO make this usable if indices are non trivial on input
++// (see ConcreteRecordBatchColumnSorter)
++// `offset` is used when this is called on a chunk of a chunked array
++using ArraySortFunc = std::function<Result<vendored::NullPartitionResult>(
++  uint64_t* indices_begin, uint64_t* indices_end, const Array& values, int64_t offset,
++  const vendored::ArraySortOptions& options, ExecContext* ctx)>;
++Result<ArraySortFunc> GetArraySorter(const DataType& type);
++Result<vendored::NullPartitionResult> SortChunkedArray(ExecContext* ctx, uint64_t* indices_begin,
++  uint64_t* indices_end,
++  const ChunkedArray& chunked_array,
++  SortOrder sort_order,
++  NullPlacement null_placement);
++
++Result<vendored::NullPartitionResult> SortChunkedArray(
++ExecContext* ctx, uint64_t* indices_begin, uint64_t* indices_end,
++const std::shared_ptr<DataType>& physical_type, const ArrayVector& physical_chunks,
++SortOrder sort_order, NullPlacement null_placement);
+ }  // namespace arrow::compute::internal
+diff --git a/cpp/src/arrow/util/reflection_internal.h b/cpp/src/arrow/util/reflection_internal.h
+index 5d281a265f..62cb2cda7b 100644
+--- a/cpp/src/arrow/util/reflection_internal.h
++++ b/cpp/src/arrow/util/reflection_internal.h
+@@ -26,6 +26,7 @@
+ 
+ namespace arrow {
+ namespace internal {
++namespace vendored {
+ 
+ template <typename...>
+ struct all_same : std::true_type {};
+@@ -131,5 +132,6 @@ struct has_enum_traits : std::false_type {};
+ template <typename T>
+ struct has_enum_traits<T, void_t<typename EnumTraits<T>::Type>> : std::true_type {};
+ 
++}  // namespace vendored
+ }  // namespace internal
+ }  // namespace arrow
