@@ -35,7 +35,7 @@ jobs:
       - name: Test CPP
         shell: bash -el {0}
         run: |
-          ci/scripts/build_test.sh $(pwd)
+          ci/scripts/build_tests.sh $(pwd)
           ./build-test/kernel_loader_tests
       - name: Test Python
         shell: bash -el {0}
