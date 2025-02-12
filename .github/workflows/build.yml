@@ -32,6 +32,11 @@ jobs:
         shell: bash -el {0}
         run: |
           ci/scripts/build_kernel_loader.sh $(pwd)
+      - name: Test CPP
+        shell: bash -el {0}
+        run: |
+          ci/scripts/build_test.sh $(pwd)
+          ./build-test/kernel_loader_tests
       - name: Test Python
         shell: bash -el {0}
         run: |
