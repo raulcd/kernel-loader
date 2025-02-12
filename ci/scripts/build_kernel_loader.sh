@@ -47,6 +47,6 @@ cmake \
     -DCMAKE_INSTALL_PREFIX=/tmp/kernel-loader \
     -DARROW_LINK_SHARED=ON \
     ${source_dir}
-cmake --build .
+cmake --build . --target install
 
 popd

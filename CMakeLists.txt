@@ -12,7 +12,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/vendored)
 include_directories(${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/)
 
-message(STATUS "CMAKE_BINARY_DIR: ${CMAKE_BINARY_DIR}")
 # Add source files
 add_library(arrow_kernel_loader SHARED
         ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/kernels/chunked_internal.cc
@@ -27,3 +26,9 @@ if(ARROW_LINK_SHARED)
 else()
     target_link_libraries(arrow_kernel_loader PRIVATE Arrow::arrow_static)
 endif()
+install(TARGETS arrow_kernel_loader
+        DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/load_kernels.h"
+        DESTINATION "${CMAKE_INSTALL_PREFIX}/include/arrow/compute/internal/vendored")
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/api_vector.h"
+        DESTINATION "${CMAKE_INSTALL_PREFIX}/include/arrow/compute/internal/vendored")
