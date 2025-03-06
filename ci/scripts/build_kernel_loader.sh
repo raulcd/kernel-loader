@@ -10,7 +10,7 @@ pushd ${build_dir}
 mkdir arrow_tmp
 pushd arrow_tmp
 
-sha="d3c467625d83bd69e2b85a289f810ec5b2789d63"
+sha="784aa6faf69f5cf135e09976a281dea9ebf58166"
 
 # Download Arrow source code
 url="https://github.com/apache/arrow/archive/${sha}.zip"
@@ -34,6 +34,8 @@ mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/api_vector.cc arrow_vendored/cpp
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/api_vector.h arrow_vendored/cpp/src/arrow/compute/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/function_internal.h arrow_vendored/cpp/src/arrow/compute/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/chunked_internal.cc arrow_vendored/cpp/src/arrow/compute/kernels/
+mv arrow_tmp/arrow-${sha}/cpp/src/arrow/util/math_internal.h arrow_vendored/cpp/src/arrow/util/
+mv arrow_tmp/arrow-${sha}/cpp/src/arrow/util/math_internal.cc arrow_vendored/cpp/src/arrow/util/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/util/reflection_internal.h arrow_vendored/cpp/src/arrow/util/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/vector_sort_internal.h arrow_vendored/cpp/src/arrow/compute/kernels/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/chunked_internal.h arrow_vendored/cpp/src/arrow/compute/kernels/

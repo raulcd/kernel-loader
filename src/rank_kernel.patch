@@ -400,19 +400,19 @@ index 2a492f581f..0832399be4 100644
        return Generator<Type0, Decimal128Type, Args...>::Exec;
      case Type::DECIMAL256:
 diff --git a/cpp/src/arrow/compute/kernels/vector_rank.cc b/cpp/src/arrow/compute/kernels/vector_rank.cc
-index 2efc61c2e6..21fc9a3dbb 100644
+index d1323c2030..73c050d933 100644
 --- a/cpp/src/arrow/compute/kernels/vector_rank.cc
 +++ b/cpp/src/arrow/compute/kernels/vector_rank.cc
-@@ -22,7 +22,7 @@
- #include "arrow/compute/kernels/vector_sort_internal.h"
+@@ -23,7 +23,7 @@
  #include "arrow/compute/registry.h"
+ #include "arrow/util/math_internal.h"
  
 -namespace arrow::compute::internal {
 +namespace arrow::compute::internal::vendored {
  
  using ::arrow::util::span;
  
-@@ -80,7 +80,7 @@ Result<NullPartitionResult> DoSortAndMarkDuplicate(
+@@ -71,7 +71,7 @@ Result<NullPartitionResult> DoSortAndMarkDuplicate(
    using GetView = GetViewType<ArrowType>;
    using ArrayType = typename TypeTraits<ArrowType>::ArrayType;
  
@@ -421,26 +421,35 @@ index 2efc61c2e6..21fc9a3dbb 100644
  
    ArrayType array(input.data());
    ARROW_ASSIGN_OR_RAISE(auto sorted,
-@@ -361,7 +361,7 @@ class RankMetaFunction : public RankMetaFunctionBase<RankMetaFunction> {
+@@ -380,7 +380,7 @@ class RankMetaFunction : public RankMetaFunctionBase<RankMetaFunction> {
    }
  
    RankMetaFunction()
--      : RankMetaFunctionBase("rank", Arity::Unary(), rank_doc, GetDefaultRankOptions()) {}
-+      : RankMetaFunctionBase("vendored_rank", Arity::Unary(), rank_doc, GetDefaultRankOptions()) {}
- };
+-      : RankMetaFunctionBase("rank", Arity::Unary(), rank_doc, &kDefaultOptions) {}
++      : RankMetaFunctionBase("vendored_rank", Arity::Unary(), rank_doc, &kDefaultOptions) {}
  
- class RankQuantileMetaFunction : public RankMetaFunctionBase<RankQuantileMetaFunction> {
-@@ -374,7 +374,7 @@ class RankQuantileMetaFunction : public RankMetaFunctionBase<RankQuantileMetaFun
+   static inline const auto kDefaultOptions = RankOptions::Defaults();
+ };
+@@ -396,7 +396,7 @@ class RankQuantileMetaFunction : public RankMetaFunctionBase<RankQuantileMetaFun
    static RankerType GetRanker(const RankQuantileOptions& options) { return RankerType(); }
  
    RankQuantileMetaFunction()
 -      : RankMetaFunctionBase("rank_quantile", Arity::Unary(), rank_quantile_doc,
 +      : RankMetaFunctionBase("vendored_rank_quantile", Arity::Unary(), rank_quantile_doc,
-                              GetDefaultQuantileRankOptions()) {}
- };
+                              &kDefaultOptions) {}
  
-@@ -385,4 +385,4 @@ void RegisterVectorRank(FunctionRegistry* registry) {
-   DCHECK_OK(registry->AddFunction(std::make_shared<RankQuantileMetaFunction>()));
+   static inline const auto kDefaultOptions = RankQuantileOptions::Defaults();
+@@ -413,7 +413,7 @@ class RankNormalMetaFunction : public RankMetaFunctionBase<RankNormalMetaFunctio
+   static RankerType GetRanker(const RankQuantileOptions& options) { return RankerType(); }
+ 
+   RankNormalMetaFunction()
+-      : RankMetaFunctionBase("rank_normal", Arity::Unary(), rank_normal_doc,
++      : RankMetaFunctionBase("vendored_rank_normal", Arity::Unary(), rank_normal_doc,
+                              &kDefaultOptions) {}
+ 
+   static inline const auto kDefaultOptions = RankQuantileOptions::Defaults();
+@@ -427,4 +427,4 @@ void RegisterVectorRank(FunctionRegistry* registry) {
+   DCHECK_OK(registry->AddFunction(std::make_shared<RankNormalMetaFunction>()));
  }
  
 -}  // namespace arrow::compute::internal
