@@ -302,9 +302,18 @@ index 9dab049821..168f063c77 100644
  struct FindAccumulatorType<I, enable_if_decimal128<I>> {
    using Type = Decimal128Type;
 diff --git a/cpp/src/arrow/compute/kernels/aggregate_pivot.cc b/cpp/src/arrow/compute/kernels/aggregate_pivot.cc
-index bcc2f53ac1..30871e55b1 100644
+index bcc2f53ac1..47c11ec8bf 100644
 --- a/cpp/src/arrow/compute/kernels/aggregate_pivot.cc
 +++ b/cpp/src/arrow/compute/kernels/aggregate_pivot.cc
+@@ -23,7 +23,7 @@
+ #include "arrow/util/bit_run_reader.h"
+ #include "arrow/util/logging.h"
+ 
+-namespace arrow::compute::internal {
++namespace arrow::compute::internal::vendored {
+ namespace {
+ 
+ using arrow::internal::VisitSetBitRunsVoid;
 @@ -175,7 +175,7 @@ void RegisterScalarAggregatePivot(FunctionRegistry* registry) {
    static auto default_pivot_options = PivotWiderOptions::Defaults();
  
