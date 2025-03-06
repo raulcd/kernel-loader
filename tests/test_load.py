@@ -16,3 +16,7 @@ chunked_array1 = pa.chunked_array([[2, 1 ,2], [1,3]])
 
 result = pc.call_function("vendored_rank_quantile", [chunked_array1])
 print(f"Rank Quantile for chunked array: {result}")
+
+# Function options not exposed in pyarrow
+result = pc.call_function("vendored_pivot_wider", [["height", "width", "depth"], [10, None, 11]])
+print(f"Pivot Wider: {result}")

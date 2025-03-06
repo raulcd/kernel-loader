@@ -19,6 +19,9 @@ add_library(arrow_kernel_loader SHARED
         ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/chunk_resolver.cc
         ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/api_vector.cc
         ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/kernels/vector_rank.cc
+        ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/api_aggregate.cc
+        ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/kernels/pivot_internal.cc
+        ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/kernels/aggregate_pivot.cc
         src/load_kernels.cc)
 
 # Link Arrow libraries
@@ -32,4 +35,6 @@ install(TARGETS arrow_kernel_loader
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/load_kernels.h"
         DESTINATION "${CMAKE_INSTALL_PREFIX}/include/arrow/compute/internal/vendored")
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/api_vector.h"
+        DESTINATION "${CMAKE_INSTALL_PREFIX}/include/arrow/compute/internal/vendored")
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/api_aggregate.h"
         DESTINATION "${CMAKE_INSTALL_PREFIX}/include/arrow/compute/internal/vendored")
