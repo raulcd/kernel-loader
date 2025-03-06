@@ -39,7 +39,7 @@ namespace arrow::compute::internal::vendored {
             // Add kernel implementation
             ARROW_RETURN_NOT_OK(registry->AddFunction(std::move(func)));
             RegisterVectorRank(registry);
-            arrow::compute::internal::RegisterScalarAggregatePivot(registry);
+            RegisterScalarAggregatePivot(registry);
 
             return arrow::Status::OK();
         }
