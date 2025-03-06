@@ -36,6 +36,12 @@ int main() {
         return -1;
     }
 
+    result = arrow::compute::CallFunction("vendored_rank_normal", {datums}, &options);
+    if (!result.ok()) {
+        std::cerr << "Failed to call function: " << result.status().ToString() << std::endl;
+        return -1;
+    }
+
     std::cout << result->ToString() << std::endl;
     return 0;
 }
