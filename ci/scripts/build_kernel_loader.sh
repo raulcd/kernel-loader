@@ -30,6 +30,7 @@ popd
 mkdir -p arrow_vendored/cpp/src/arrow/compute/kernels
 mkdir -p arrow_vendored/cpp/src/arrow/util
 
+# Rank Kernel requirements
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/api_vector.cc arrow_vendored/cpp/src/arrow/compute/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/api_vector.h arrow_vendored/cpp/src/arrow/compute/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/function_internal.h arrow_vendored/cpp/src/arrow/compute/
@@ -43,6 +44,16 @@ mv arrow_tmp/arrow-${sha}/cpp/src/arrow/chunk_resolver.cc arrow_vendored/cpp/src
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/chunk_resolver.h arrow_vendored/cpp/src/arrow/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/codegen_internal.h arrow_vendored/cpp/src/arrow/compute/kernels/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/vector_rank.cc arrow_vendored/cpp/src/arrow/compute/kernels/
+# Pivot Kernel requirements
+mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/api_aggregate.cc arrow_vendored/cpp/src/arrow/compute/
+mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/api_aggregate.h arrow_vendored/cpp/src/arrow/compute/
+mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/aggregate_pivot.cc arrow_vendored/cpp/src/arrow/compute/kernels/
+mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/aggregate_internal.h arrow_vendored/cpp/src/arrow/compute/kernels/
+mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/util_internal.h arrow_vendored/cpp/src/arrow/compute/kernels/
+mv arrow_tmp/arrow-${sha}/cpp/src/arrow/util/int128_internal.h arrow_vendored/cpp/src/arrow/util/
+mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/common_internal.h arrow_vendored/cpp/src/arrow/compute/kernels/
+mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/pivot_internal.cc arrow_vendored/cpp/src/arrow/compute/kernels/
+mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/pivot_internal.h arrow_vendored/cpp/src/arrow/compute/kernels/
 
 # Build the kernel loader
 cmake \

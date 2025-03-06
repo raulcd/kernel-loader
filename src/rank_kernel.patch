@@ -24,6 +24,36 @@ index 3d6458167f..75f4d19b1f 100644
  
  class ChunkResolver;
  
+diff --git a/cpp/src/arrow/compute/api_aggregate.cc b/cpp/src/arrow/compute/api_aggregate.cc
+index 37119d2b67..aa7919e60b 100644
+--- a/cpp/src/arrow/compute/api_aggregate.cc
++++ b/cpp/src/arrow/compute/api_aggregate.cc
+@@ -25,6 +25,7 @@
+ 
+ namespace arrow {
+ namespace internal {
++namespace vendored {
+ 
+ template <>
+ struct EnumTraits<compute::CountOptions::CountMode>
+@@ -84,7 +85,7 @@ struct EnumTraits<compute::PivotWiderOptions::UnexpectedKeyBehavior>
+     return "<INVALID>";
+   }
+ };
+-
++}  // namespace vendored
+ }  // namespace internal
+ 
+ namespace compute {
+@@ -96,7 +97,7 @@ using ::arrow::internal::checked_cast;
+ 
+ namespace internal {
+ namespace {
+-using ::arrow::internal::DataMember;
++using ::arrow::internal::vendored::DataMember;
+ static auto kScalarAggregateOptionsType = GetFunctionOptionsType<ScalarAggregateOptions>(
+     DataMember("skip_nulls", &ScalarAggregateOptions::skip_nulls),
+     DataMember("min_count", &ScalarAggregateOptions::min_count));
 diff --git a/cpp/src/arrow/compute/api_vector.cc b/cpp/src/arrow/compute/api_vector.cc
 index 53ceed1b08..da356ef3fc 100644
 --- a/cpp/src/arrow/compute/api_vector.cc
@@ -250,6 +280,40 @@ index 9d8928466b..5f9a607ee9 100644
    return &instance;
  }
  
+diff --git a/cpp/src/arrow/compute/kernels/aggregate_internal.h b/cpp/src/arrow/compute/kernels/aggregate_internal.h
+index 9dab049821..168f063c77 100644
+--- a/cpp/src/arrow/compute/kernels/aggregate_internal.h
++++ b/cpp/src/arrow/compute/kernels/aggregate_internal.h
+@@ -52,16 +52,6 @@ struct FindAccumulatorType<I, enable_if_floating_point<I>> {
+   using Type = DoubleType;
+ };
+ 
+-template <typename I>
+-struct FindAccumulatorType<I, enable_if_decimal32<I>> {
+-  using Type = Decimal32Type;
+-};
+-
+-template <typename I>
+-struct FindAccumulatorType<I, enable_if_decimal64<I>> {
+-  using Type = Decimal64Type;
+-};
+-
+ template <typename I>
+ struct FindAccumulatorType<I, enable_if_decimal128<I>> {
+   using Type = Decimal128Type;
+diff --git a/cpp/src/arrow/compute/kernels/aggregate_pivot.cc b/cpp/src/arrow/compute/kernels/aggregate_pivot.cc
+index bcc2f53ac1..30871e55b1 100644
+--- a/cpp/src/arrow/compute/kernels/aggregate_pivot.cc
++++ b/cpp/src/arrow/compute/kernels/aggregate_pivot.cc
+@@ -175,7 +175,7 @@ void RegisterScalarAggregatePivot(FunctionRegistry* registry) {
+   static auto default_pivot_options = PivotWiderOptions::Defaults();
+ 
+   auto func = std::make_shared<ScalarAggregateFunction>(
+-      "pivot_wider", Arity::Binary(), pivot_doc, &default_pivot_options);
++      "vendored_pivot_wider", Arity::Binary(), pivot_doc, &default_pivot_options);
+ 
+   for (auto key_type : BaseBinaryTypes()) {
+     auto sig = KernelSignature::Make({key_type->id(), InputType::Any()},
 diff --git a/cpp/src/arrow/compute/kernels/chunked_internal.cc b/cpp/src/arrow/compute/kernels/chunked_internal.cc
 index e72b8e1f5b..dcc72c427c 100644
 --- a/cpp/src/arrow/compute/kernels/chunked_internal.cc
