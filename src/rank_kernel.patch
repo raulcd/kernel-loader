@@ -25,7 +25,7 @@ index 3d6458167f..75f4d19b1f 100644
  class ChunkResolver;
  
 diff --git a/cpp/src/arrow/compute/api_aggregate.cc b/cpp/src/arrow/compute/api_aggregate.cc
-index 37119d2b67..aa7919e60b 100644
+index 20d3ce2faf..8976be5aa1 100644
 --- a/cpp/src/arrow/compute/api_aggregate.cc
 +++ b/cpp/src/arrow/compute/api_aggregate.cc
 @@ -25,6 +25,7 @@
@@ -281,10 +281,10 @@ index 9d8928466b..5f9a607ee9 100644
  }
  
 diff --git a/cpp/src/arrow/compute/kernels/aggregate_internal.h b/cpp/src/arrow/compute/kernels/aggregate_internal.h
-index 9dab049821..168f063c77 100644
+index 23aa20eddc..0282657841 100644
 --- a/cpp/src/arrow/compute/kernels/aggregate_internal.h
 +++ b/cpp/src/arrow/compute/kernels/aggregate_internal.h
-@@ -52,16 +52,6 @@ struct FindAccumulatorType<I, enable_if_floating_point<I>> {
+@@ -53,16 +53,6 @@ struct FindAccumulatorType<I, enable_if_floating_point<I>> {
    using Type = DoubleType;
  };
  
