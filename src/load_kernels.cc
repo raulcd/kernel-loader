@@ -3,6 +3,7 @@
 #include "load_kernels.h"
 #include "arrow/compute/kernels/vector_rank.h"
 #include "arrow/compute/kernels/aggregate_pivot.h"
+#include "arrow/compute/kernels/hash_aggregate.h"
 
 namespace arrow::compute::internal::vendored {
 
@@ -40,6 +41,7 @@ namespace arrow::compute::internal::vendored {
             ARROW_RETURN_NOT_OK(registry->AddFunction(std::move(func)));
             RegisterVectorRank(registry);
             RegisterScalarAggregatePivot(registry);
+            RegisterHashAggregateBasic(registry);
 
             return arrow::Status::OK();
         }

@@ -28,6 +28,7 @@ popd
 # Copy only the vendored files to compile against old Arrow instead of building Arrow from clone
 
 mkdir -p arrow_vendored/cpp/src/arrow/compute/kernels
+mkdir -p arrow_vendored/cpp/src/arrow/compute/row
 mkdir -p arrow_vendored/cpp/src/arrow/util
 
 # Rank Kernel requirements
@@ -48,12 +49,16 @@ mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/vector_rank.cc arrow_ven
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/api_aggregate.cc arrow_vendored/cpp/src/arrow/compute/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/api_aggregate.h arrow_vendored/cpp/src/arrow/compute/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/aggregate_pivot.cc arrow_vendored/cpp/src/arrow/compute/kernels/
+mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/hash_aggregate.cc arrow_vendored/cpp/src/arrow/compute/kernels/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/aggregate_internal.h arrow_vendored/cpp/src/arrow/compute/kernels/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/util_internal.h arrow_vendored/cpp/src/arrow/compute/kernels/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/util/int128_internal.h arrow_vendored/cpp/src/arrow/util/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/common_internal.h arrow_vendored/cpp/src/arrow/compute/kernels/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/pivot_internal.cc arrow_vendored/cpp/src/arrow/compute/kernels/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/pivot_internal.h arrow_vendored/cpp/src/arrow/compute/kernels/
+# Specific for hash_pivot
+mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/aggregate_var_std_internal.h arrow_vendored/cpp/src/arrow/compute/kernels/
+mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/row/row_encoder_internal.h arrow_vendored/cpp/src/arrow/compute/row/
 
 # Build the kernel loader
 cmake \
