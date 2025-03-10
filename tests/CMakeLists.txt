@@ -5,6 +5,7 @@ project(kernel_loader_tests)
 option(ARROW_LINK_SHARED "Link to the Arrow shared library" ON)
 # Find Arrow libraries
 find_package(Arrow REQUIRED)
+find_package(ArrowAcero REQUIRED)
 # Find arrow_kernel_loader library
 add_library(arrow_kernel_loader SHARED IMPORTED)
 set_target_properties(arrow_kernel_loader PROPERTIES
@@ -26,7 +27,7 @@ add_executable(kernel_loader_tests ${TEST_SOURCES})
 
 # Link Arrow libraries and arrow_kernel_loader to the test executable
 if(ARROW_LINK_SHARED)
-    target_link_libraries(kernel_loader_tests PRIVATE Arrow::arrow_shared arrow_kernel_loader)
+    target_link_libraries(kernel_loader_tests PRIVATE Arrow::arrow_shared ArrowAcero::arrow_acero_shared arrow_kernel_loader)
 else()
-    target_link_libraries(kernel_loader_tests PRIVATE Arrow::arrow_static arrow_kernel_loader)
+    target_link_libraries(kernel_loader_tests PRIVATE Arrow::arrow_static ArrowAcero::arrow_acero_static arrow_kernel_loader)
 endif()
