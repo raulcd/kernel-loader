@@ -25,18 +25,95 @@ index 3d6458167f..75f4d19b1f 100644
  class ChunkResolver;
  
 diff --git a/cpp/src/arrow/compute/api_aggregate.cc b/cpp/src/arrow/compute/api_aggregate.cc
-index 20d3ce2faf..8976be5aa1 100644
+index 20d3ce2faf..571310d23b 100644
 --- a/cpp/src/arrow/compute/api_aggregate.cc
 +++ b/cpp/src/arrow/compute/api_aggregate.cc
-@@ -25,6 +25,7 @@
+@@ -25,19 +25,20 @@
  
  namespace arrow {
  namespace internal {
 +namespace vendored {
  
  template <>
- struct EnumTraits<compute::CountOptions::CountMode>
-@@ -84,7 +85,7 @@ struct EnumTraits<compute::PivotWiderOptions::UnexpectedKeyBehavior>
+-struct EnumTraits<compute::CountOptions::CountMode>
+-    : BasicEnumTraits<compute::CountOptions::CountMode, compute::CountOptions::ONLY_VALID,
+-                      compute::CountOptions::ONLY_NULL, compute::CountOptions::ALL> {
++struct EnumTraits<compute::internal::vendored::CountOptions::CountMode>
++    : BasicEnumTraits<compute::internal::vendored::CountOptions::CountMode, compute::internal::vendored::CountOptions::ONLY_VALID,
++    compute::internal::vendored::CountOptions::ONLY_NULL, compute::internal::vendored::CountOptions::ALL> {
+   static std::string name() { return "CountOptions::CountMode"; }
+-  static std::string value_name(compute::CountOptions::CountMode value) {
++  static std::string value_name(compute::internal::vendored::CountOptions::CountMode value) {
+     switch (value) {
+-      case compute::CountOptions::ONLY_VALID:
++      case compute::internal::vendored::CountOptions::ONLY_VALID:
+         return "NON_NULL";
+-      case compute::CountOptions::ONLY_NULL:
++      case compute::internal::vendored::CountOptions::ONLY_NULL:
+         return "NULLS";
+-      case compute::CountOptions::ALL:
++      case compute::internal::vendored::CountOptions::ALL:
+         return "ALL";
+     }
+     return "<INVALID>";
+@@ -45,23 +46,23 @@ struct EnumTraits<compute::CountOptions::CountMode>
+ };
+ 
+ template <>
+-struct EnumTraits<compute::QuantileOptions::Interpolation>
+-    : BasicEnumTraits<compute::QuantileOptions::Interpolation,
+-                      compute::QuantileOptions::LINEAR, compute::QuantileOptions::LOWER,
+-                      compute::QuantileOptions::HIGHER, compute::QuantileOptions::NEAREST,
+-                      compute::QuantileOptions::MIDPOINT> {
++struct EnumTraits<compute::internal::vendored::QuantileOptions::Interpolation>
++    : BasicEnumTraits<compute::internal::vendored::QuantileOptions::Interpolation,
++                      compute::internal::vendored::QuantileOptions::LINEAR, compute::internal::vendored::QuantileOptions::LOWER,
++                      compute::internal::vendored::QuantileOptions::HIGHER, compute::internal::vendored::QuantileOptions::NEAREST,
++                      compute::internal::vendored::QuantileOptions::MIDPOINT> {
+   static std::string name() { return "QuantileOptions::Interpolation"; }
+-  static std::string value_name(compute::QuantileOptions::Interpolation value) {
++  static std::string value_name(compute::internal::vendored::QuantileOptions::Interpolation value) {
+     switch (value) {
+-      case compute::QuantileOptions::LINEAR:
++      case compute::internal::vendored::QuantileOptions::LINEAR:
+         return "LINEAR";
+-      case compute::QuantileOptions::LOWER:
++      case compute::internal::vendored::QuantileOptions::LOWER:
+         return "LOWER";
+-      case compute::QuantileOptions::HIGHER:
++      case compute::internal::vendored::QuantileOptions::HIGHER:
+         return "HIGHER";
+-      case compute::QuantileOptions::NEAREST:
++      case compute::internal::vendored::QuantileOptions::NEAREST:
+         return "NEAREST";
+-      case compute::QuantileOptions::MIDPOINT:
++      case compute::internal::vendored::QuantileOptions::MIDPOINT:
+         return "MIDPOINT";
+     }
+     return "<INVALID>";
+@@ -69,22 +70,22 @@ struct EnumTraits<compute::QuantileOptions::Interpolation>
+ };
+ 
+ template <>
+-struct EnumTraits<compute::PivotWiderOptions::UnexpectedKeyBehavior>
+-    : BasicEnumTraits<compute::PivotWiderOptions::UnexpectedKeyBehavior,
+-                      compute::PivotWiderOptions::kIgnore,
+-                      compute::PivotWiderOptions::kRaise> {
++struct EnumTraits<compute::internal::vendored::PivotWiderOptions::UnexpectedKeyBehavior>
++    : BasicEnumTraits<compute::internal::vendored::PivotWiderOptions::UnexpectedKeyBehavior,
++                      compute::internal::vendored::PivotWiderOptions::kIgnore,
++                      compute::internal::vendored::PivotWiderOptions::kRaise> {
+   static std::string name() { return "PivotWiderOptions::UnexpectedKeyBehavior"; }
+-  static std::string value_name(compute::PivotWiderOptions::UnexpectedKeyBehavior value) {
++  static std::string value_name(compute::internal::vendored::PivotWiderOptions::UnexpectedKeyBehavior value) {
+     switch (value) {
+-      case compute::PivotWiderOptions::kIgnore:
++      case compute::internal::vendored::PivotWiderOptions::kIgnore:
+         return "kIgnore";
+-      case compute::PivotWiderOptions::kRaise:
++      case compute::internal::vendored::PivotWiderOptions::kRaise:
+         return "kRaise";
+     }
      return "<INVALID>";
    }
  };
@@ -45,15 +122,147 @@ index 20d3ce2faf..8976be5aa1 100644
  }  // namespace internal
  
  namespace compute {
-@@ -96,7 +97,7 @@ using ::arrow::internal::checked_cast;
+@@ -94,9 +95,9 @@ namespace compute {
  
- namespace internal {
+ using ::arrow::internal::checked_cast;
+ 
+-namespace internal {
++namespace internal::vendored {
  namespace {
 -using ::arrow::internal::DataMember;
 +using ::arrow::internal::vendored::DataMember;
  static auto kScalarAggregateOptionsType = GetFunctionOptionsType<ScalarAggregateOptions>(
      DataMember("skip_nulls", &ScalarAggregateOptions::skip_nulls),
      DataMember("min_count", &ScalarAggregateOptions::min_count));
+@@ -128,47 +129,46 @@ static auto kPivotOptionsType = GetFunctionOptionsType<PivotWiderOptions>(
+ static auto kIndexOptionsType =
+     GetFunctionOptionsType<IndexOptions>(DataMember("value", &IndexOptions::value));
+ }  // namespace
+-}  // namespace internal
+ 
+ ScalarAggregateOptions::ScalarAggregateOptions(bool skip_nulls, uint32_t min_count)
+-    : FunctionOptions(internal::kScalarAggregateOptionsType),
++    : FunctionOptions(kScalarAggregateOptionsType),
+       skip_nulls(skip_nulls),
+       min_count(min_count) {}
+ constexpr char ScalarAggregateOptions::kTypeName[];
+ 
+ CountOptions::CountOptions(CountMode mode)
+-    : FunctionOptions(internal::kCountOptionsType), mode(mode) {}
++    : FunctionOptions(kCountOptionsType), mode(mode) {}
+ constexpr char CountOptions::kTypeName[];
+ 
+ ModeOptions::ModeOptions(int64_t n, bool skip_nulls, uint32_t min_count)
+-    : FunctionOptions(internal::kModeOptionsType),
++    : FunctionOptions(kModeOptionsType),
+       n{n},
+       skip_nulls{skip_nulls},
+       min_count{min_count} {}
+ constexpr char ModeOptions::kTypeName[];
+ 
+ VarianceOptions::VarianceOptions(int ddof, bool skip_nulls, uint32_t min_count)
+-    : FunctionOptions(internal::kVarianceOptionsType),
++    : FunctionOptions(kVarianceOptionsType),
+       ddof(ddof),
+       skip_nulls(skip_nulls),
+       min_count(min_count) {}
+ constexpr char VarianceOptions::kTypeName[];
+ 
+ SkewOptions::SkewOptions(bool skip_nulls, uint32_t min_count)
+-    : FunctionOptions(internal::kSkewOptionsType),
++    : FunctionOptions(kSkewOptionsType),
+       skip_nulls(skip_nulls),
+       min_count(min_count) {}
+ 
+ QuantileOptions::QuantileOptions(double q, enum Interpolation interpolation,
+                                  bool skip_nulls, uint32_t min_count)
+-    : FunctionOptions(internal::kQuantileOptionsType),
++    : FunctionOptions(kQuantileOptionsType),
+       q{q},
+       interpolation{interpolation},
+       skip_nulls{skip_nulls},
+       min_count{min_count} {}
+ QuantileOptions::QuantileOptions(std::vector<double> q, enum Interpolation interpolation,
+                                  bool skip_nulls, uint32_t min_count)
+-    : FunctionOptions(internal::kQuantileOptionsType),
++    : FunctionOptions(kQuantileOptionsType),
+       q{std::move(q)},
+       interpolation{interpolation},
+       skip_nulls{skip_nulls},
+@@ -177,7 +177,7 @@ constexpr char QuantileOptions::kTypeName[];
+ 
+ TDigestOptions::TDigestOptions(double q, uint32_t delta, uint32_t buffer_size,
+                                bool skip_nulls, uint32_t min_count)
+-    : FunctionOptions(internal::kTDigestOptionsType),
++    : FunctionOptions(kTDigestOptionsType),
+       q{q},
+       delta{delta},
+       buffer_size{buffer_size},
+@@ -185,7 +185,7 @@ TDigestOptions::TDigestOptions(double q, uint32_t delta, uint32_t buffer_size,
+       min_count{min_count} {}
+ TDigestOptions::TDigestOptions(std::vector<double> q, uint32_t delta,
+                                uint32_t buffer_size, bool skip_nulls, uint32_t min_count)
+-    : FunctionOptions(internal::kTDigestOptionsType),
++    : FunctionOptions(kTDigestOptionsType),
+       q{std::move(q)},
+       delta{delta},
+       buffer_size{buffer_size},
+@@ -195,17 +195,16 @@ constexpr char TDigestOptions::kTypeName[];
+ 
+ PivotWiderOptions::PivotWiderOptions(std::vector<std::string> key_names,
+                                      UnexpectedKeyBehavior unexpected_key_behavior)
+-    : FunctionOptions(internal::kPivotOptionsType),
++    : FunctionOptions(kPivotOptionsType),
+       key_names(std::move(key_names)),
+       unexpected_key_behavior(unexpected_key_behavior) {}
+-PivotWiderOptions::PivotWiderOptions() : FunctionOptions(internal::kPivotOptionsType) {}
++PivotWiderOptions::PivotWiderOptions() : FunctionOptions(kPivotOptionsType) {}
+ 
+ IndexOptions::IndexOptions(std::shared_ptr<Scalar> value)
+-    : FunctionOptions(internal::kIndexOptionsType), value{std::move(value)} {}
++    : FunctionOptions(kIndexOptionsType), value{std::move(value)} {}
+ IndexOptions::IndexOptions() : IndexOptions(std::make_shared<NullScalar>()) {}
+ constexpr char IndexOptions::kTypeName[];
+ 
+-namespace internal {
+ void RegisterAggregateOptions(FunctionRegistry* registry) {
+   DCHECK_OK(registry->AddFunctionOptionsType(kScalarAggregateOptionsType));
+   DCHECK_OK(registry->AddFunctionOptionsType(kCountOptionsType));
+@@ -217,7 +216,6 @@ void RegisterAggregateOptions(FunctionRegistry* registry) {
+   DCHECK_OK(registry->AddFunctionOptionsType(kPivotOptionsType));
+   DCHECK_OK(registry->AddFunctionOptionsType(kIndexOptionsType));
+ }
+-}  // namespace internal
+ 
+ // ----------------------------------------------------------------------
+ // Scalar aggregates
+@@ -302,5 +300,6 @@ Result<Datum> Index(const Datum& value, const IndexOptions& options, ExecContext
+   return CallFunction("index", {value}, &options, ctx);
+ }
+ 
++}  // namespace internal::vendored
+ }  // namespace compute
+ }  // namespace arrow
+diff --git a/cpp/src/arrow/compute/api_aggregate.h b/cpp/src/arrow/compute/api_aggregate.h
+index 61bab4cdb8..d61bec2e29 100644
+--- a/cpp/src/arrow/compute/api_aggregate.h
++++ b/cpp/src/arrow/compute/api_aggregate.h
+@@ -36,6 +36,7 @@ namespace compute {
+ 
+ class ExecContext;
+ 
++namespace internal::vendored {
+ // ----------------------------------------------------------------------
+ // Aggregate functions
+ 
+@@ -585,6 +586,6 @@ Result<Datum> TDigest(const Datum& value,
+ ARROW_EXPORT
+ Result<Datum> Index(const Datum& value, const IndexOptions& options,
+                     ExecContext* ctx = NULLPTR);
+-
++}  // namespace internal::vendored
+ }  // namespace compute
+ }  // namespace arrow
 diff --git a/cpp/src/arrow/compute/api_vector.cc b/cpp/src/arrow/compute/api_vector.cc
 index 53ceed1b08..da356ef3fc 100644
 --- a/cpp/src/arrow/compute/api_vector.cc
@@ -803,6 +1012,32 @@ index e84c3c2dc1..069e369501 100644
  }  // namespace internal
  }  // namespace compute
  }  // namespace arrow
+diff --git a/cpp/src/arrow/compute/kernels/pivot_internal.cc b/cpp/src/arrow/compute/kernels/pivot_internal.cc
+index 7a65ddc212..6d120ee206 100644
+--- a/cpp/src/arrow/compute/kernels/pivot_internal.cc
++++ b/cpp/src/arrow/compute/kernels/pivot_internal.cc
+@@ -26,7 +26,7 @@
+ #include "arrow/util/checked_cast.h"
+ #include "arrow/visit_type_inline.h"
+ 
+-namespace arrow::compute::internal {
++namespace arrow::compute::internal::vendored {
+ 
+ using ::arrow::util::span;
+ 
+diff --git a/cpp/src/arrow/compute/kernels/pivot_internal.h b/cpp/src/arrow/compute/kernels/pivot_internal.h
+index faa808b7a2..d40c8d0bb4 100644
+--- a/cpp/src/arrow/compute/kernels/pivot_internal.h
++++ b/cpp/src/arrow/compute/kernels/pivot_internal.h
+@@ -28,7 +28,7 @@
+ #include "arrow/type_fwd.h"
+ #include "arrow/util/span.h"
+ 
+-namespace arrow::compute::internal {
++namespace arrow::compute::internal::vendored {
+ 
+ using PivotWiderKeyIndex = uint8_t;
+ 
 diff --git a/cpp/src/arrow/compute/kernels/vector_rank.cc b/cpp/src/arrow/compute/kernels/vector_rank.cc
 index d1323c2030..73c050d933 100644
 --- a/cpp/src/arrow/compute/kernels/vector_rank.cc

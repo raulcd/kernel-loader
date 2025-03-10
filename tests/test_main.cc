@@ -57,7 +57,7 @@ int main() {
     status = CreateStrArray(arr2);
     auto datums2 {arr2};
 
-    arrow::compute::PivotWiderOptions pivot_options = arrow::compute::PivotWiderOptions::Defaults();
+    arrow::compute::internal::vendored::PivotWiderOptions pivot_options = arrow::compute::internal::vendored::PivotWiderOptions::Defaults();
     pivot_options.key_names = {"width", "height"};
     result = arrow::compute::CallFunction("vendored_pivot_wider", {datums2, datums}, &pivot_options);
     if (!result.ok()) {
