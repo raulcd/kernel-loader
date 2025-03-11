@@ -16,11 +16,11 @@ sha="ffd651a1298a7e7f97aad83aa51f636d80fe46a3"
 url="https://github.com/apache/arrow/archive/${sha}.zip"
 curl -L -o arrow_vendored.zip ${url}
 unzip arrow_vendored.zip
-cp ../../src/rank_kernel.patch arrow-${sha}
+cp ../../src/kernels.patch arrow-${sha}
 
 pushd arrow-${sha}
 # Apply the required patch
-patch -p1 -i rank_kernel.patch
+patch -p1 -i kernels.patch
 popd
 
 popd
