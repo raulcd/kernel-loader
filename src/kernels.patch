@@ -924,29 +924,6 @@ index 2a492f581f..ca021845e1 100644
  }  // namespace internal
  }  // namespace compute
  }  // namespace arrow
-diff --git a/cpp/src/arrow/compute/kernels/hash_aggregate.cc b/cpp/src/arrow/compute/kernels/hash_aggregate.cc
-index 18a5590b2e..100d6abb0c 100644
---- a/cpp/src/arrow/compute/kernels/hash_aggregate.cc
-+++ b/cpp/src/arrow/compute/kernels/hash_aggregate.cc
-@@ -291,18 +291,6 @@ struct AntiExtrema<double> {
-   static constexpr double anti_max() { return -std::numeric_limits<double>::infinity(); }
- };
- 
--template <>
--struct AntiExtrema<Decimal32> {
--  static constexpr Decimal32 anti_min() { return BasicDecimal32::GetMaxSentinel(); }
--  static constexpr Decimal32 anti_max() { return BasicDecimal32::GetMinSentinel(); }
--};
--
--template <>
--struct AntiExtrema<Decimal64> {
--  static constexpr Decimal64 anti_min() { return BasicDecimal64::GetMaxSentinel(); }
--  static constexpr Decimal64 anti_max() { return BasicDecimal64::GetMinSentinel(); }
--};
--
- template <>
- struct AntiExtrema<Decimal128> {
-   static constexpr Decimal128 anti_min() { return BasicDecimal128::GetMaxSentinel(); }
 diff --git a/cpp/src/arrow/compute/kernels/hash_aggregate_internal.h b/cpp/src/arrow/compute/kernels/hash_aggregate_internal.h
 index 9ea4cdfcc5..ff6b2cb840 100644
 --- a/cpp/src/arrow/compute/kernels/hash_aggregate_internal.h
