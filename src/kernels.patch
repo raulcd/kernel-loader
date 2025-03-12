@@ -518,10 +518,179 @@ index 9d8928466b..5e102409d6 100644
  }  // namespace internal
  }  // namespace compute
  }  // namespace arrow
+diff --git a/cpp/src/arrow/compute/kernels/aggregate_basic.cc b/cpp/src/arrow/compute/kernels/aggregate_basic.cc
+index 68b1ac7c03..b506d54437 100644
+--- a/cpp/src/arrow/compute/kernels/aggregate_basic.cc
++++ b/cpp/src/arrow/compute/kernels/aggregate_basic.cc
+@@ -30,6 +30,7 @@
+ namespace arrow {
+ namespace compute {
+ namespace internal {
++namespace vendored {
+ 
+ namespace {
+ 
+@@ -305,7 +306,7 @@ Result<std::unique_ptr<KernelState>> MeanInit(KernelContext* ctx,
+ // ----------------------------------------------------------------------
+ // Product implementation
+ 
+-using arrow::compute::internal::to_unsigned;
++using arrow::compute::internal::vendored::to_unsigned;
+ 
+ template <typename ArrowType>
+ struct ProductImpl : public ScalarAggregator {
+@@ -333,7 +334,7 @@ struct ProductImpl : public ScalarAggregator {
+         return Status::OK();
+       }
+ 
+-      internal::VisitArrayValuesInline<ArrowType>(
++      internal::vendored::VisitArrayValuesInline<ArrowType>(
+           data,
+           [&](typename TypeTraits<ArrowType>::CType value) {
+             this->product = MultiplyTraits<AccType>::Multiply(
+@@ -346,7 +347,7 @@ struct ProductImpl : public ScalarAggregator {
+       this->nulls_observed = this->nulls_observed || !data.is_valid;
+       if (data.is_valid) {
+         for (int64_t i = 0; i < batch.length; i++) {
+-          auto value = internal::UnboxScalar<ArrowType>::Unbox(data);
++          auto value = internal::vendored::UnboxScalar<ArrowType>::Unbox(data);
+           this->product = MultiplyTraits<AccType>::Multiply(
+               *out_type, this->product, static_cast<ProductType>(value));
+         }
+@@ -666,7 +667,7 @@ Result<std::unique_ptr<KernelState>> AllInit(KernelContext*, const KernelInitArg
+ 
+ template <typename ArgType>
+ struct IndexImpl : public ScalarAggregator {
+-  using ArgValue = typename internal::GetViewType<ArgType>::T;
++  using ArgValue = typename internal::vendored::GetViewType<ArgType>::T;
+ 
+   explicit IndexImpl(IndexOptions options, KernelState* raw_state)
+       : options(std::move(options)), seen(0), index(-1) {
+@@ -682,12 +683,12 @@ struct IndexImpl : public ScalarAggregator {
+       return Status::OK();
+     }
+ 
+-    const ArgValue desired = internal::UnboxScalar<ArgType>::Unbox(*options.value);
++    const ArgValue desired = internal::vendored::UnboxScalar<ArgType>::Unbox(*options.value);
+ 
+     if (batch[0].is_scalar()) {
+       seen = batch.length;
+       if (batch[0].scalar->is_valid) {
+-        const ArgValue v = internal::UnboxScalar<ArgType>::Unbox(*batch[0].scalar);
++        const ArgValue v = internal::vendored::UnboxScalar<ArgType>::Unbox(*batch[0].scalar);
+         if (v == desired) {
+           index = 0;
+           return Status::Cancelled("Found");
+@@ -700,7 +701,7 @@ struct IndexImpl : public ScalarAggregator {
+     seen = input.length;
+     int64_t i = 0;
+ 
+-    ARROW_UNUSED(internal::VisitArrayValuesInline<ArgType>(
++    ARROW_UNUSED(internal::vendored::VisitArrayValuesInline<ArgType>(
+         input,
+         [&](ArgValue v) -> Status {
+           if (v == desired) {
+@@ -885,7 +886,7 @@ Result<TypeHolder> FirstLastType(KernelContext*, const std::vector<TypeHolder>&
+   return struct_({field("first", ty), field("last", ty)});
+ }
+ 
+-void AddFirstLastKernel(KernelInit init, internal::detail::GetTypeId get_id,
++void AddFirstLastKernel(KernelInit init, internal::vendored::detail::GetTypeId get_id,
+                         ScalarAggregateFunction* func, SimdLevel::type simd_level) {
+   auto sig = KernelSignature::Make({InputType(get_id.id)}, FirstLastType);
+   AddAggKernel(std::move(sig), init, func, simd_level);
+@@ -899,7 +900,7 @@ void AddFirstLastKernels(KernelInit init,
+   }
+ }
+ 
+-void AddMinMaxKernel(KernelInit init, internal::detail::GetTypeId get_id,
++void AddMinMaxKernel(KernelInit init, internal::vendored::detail::GetTypeId get_id,
+                      ScalarAggregateFunction* func, SimdLevel::type simd_level) {
+   auto sig = KernelSignature::Make({InputType(get_id.id)}, MinMaxType);
+   AddAggKernel(std::move(sig), init, func, simd_level);
+@@ -1190,6 +1191,7 @@ void RegisterScalarAggregateBasic(FunctionRegistry* registry) {
+   DCHECK_OK(registry->AddFunction(std::move(func)));
+ }
+ 
++}  // namespace vendored
+ }  // namespace internal
+ }  // namespace compute
+ }  // namespace arrow
+diff --git a/cpp/src/arrow/compute/kernels/aggregate_basic.inc.cc b/cpp/src/arrow/compute/kernels/aggregate_basic.inc.cc
+index 49010d182c..496f26003d 100644
+--- a/cpp/src/arrow/compute/kernels/aggregate_basic.inc.cc
++++ b/cpp/src/arrow/compute/kernels/aggregate_basic.inc.cc
+@@ -38,7 +38,7 @@
+ #include "arrow/util/bit_block_counter.h"
+ #include "arrow/util/decimal.h"
+ 
+-namespace arrow::compute::internal {
++namespace arrow::compute::internal::vendored {
+ namespace {
+ 
+ // ----------------------------------------------------------------------
+@@ -77,7 +77,7 @@ struct SumImpl : public ScalarAggregator {
+       this->count += data.is_valid * batch.length;
+       this->nulls_observed = this->nulls_observed || !data.is_valid;
+       if (data.is_valid) {
+-        this->sum += static_cast<SumCType>(internal::UnboxScalar<ArrowType>::Unbox(data) *
++        this->sum += static_cast<SumCType>(internal::vendored::UnboxScalar<ArrowType>::Unbox(data) *
+                                            batch.length);
+       }
+     }
+@@ -445,7 +445,7 @@ struct FirstLastImpl : public ScalarAggregator {
+   Status ConsumeScalar(const Scalar& scalar) {
+     this->state.has_any_values = true;
+     if (scalar.is_valid) {
+-      this->state.MergeOne(internal::UnboxScalar<ArrowType>::Unbox(scalar));
++      this->state.MergeOne(internal::vendored::UnboxScalar<ArrowType>::Unbox(scalar));
+     } else {
+       if (!this->state.has_values) {
+         this->state.first_is_null = true;
+@@ -778,7 +778,7 @@ struct MinMaxImpl : public ScalarAggregator {
+     this->count += scalar.is_valid;
+ 
+     if (!local.has_nulls || options.skip_nulls) {
+-      local.MergeOne(internal::UnboxScalar<ArrowType>::Unbox(scalar));
++      local.MergeOne(internal::vendored::UnboxScalar<ArrowType>::Unbox(scalar));
+     }
+ 
+     this->state += local;
+diff --git a/cpp/src/arrow/compute/kernels/aggregate_basic_internal.h b/cpp/src/arrow/compute/kernels/aggregate_basic_internal.h
+index 5cc3a558b1..1908015d24 100644
+--- a/cpp/src/arrow/compute/kernels/aggregate_basic_internal.h
++++ b/cpp/src/arrow/compute/kernels/aggregate_basic_internal.h
+@@ -25,7 +25,7 @@
+ #include "arrow/compute/type_fwd.h"
+ #include "arrow/type_fwd.h"
+ 
+-namespace arrow::compute::internal {
++namespace arrow::compute::internal::vendored {
+ 
+ // aggregate_basic.cc
+ 
+@@ -38,7 +38,7 @@ void AddMinMaxKernels(KernelInit init,
+                       const std::vector<std::shared_ptr<DataType>>& types,
+                       ScalarAggregateFunction* func,
+                       SimdLevel::type simd_level = SimdLevel::NONE);
+-void AddMinMaxKernel(KernelInit init, internal::detail::GetTypeId get_id,
++void AddMinMaxKernel(KernelInit init, detail::GetTypeId get_id,
+                      ScalarAggregateFunction* func,
+                      SimdLevel::type simd_level = SimdLevel::NONE);
+ 
 diff --git a/cpp/src/arrow/compute/kernels/aggregate_internal.h b/cpp/src/arrow/compute/kernels/aggregate_internal.h
-index 23aa20eddc..0282657841 100644
+index 23aa20eddc..4c15bfcc72 100644
 --- a/cpp/src/arrow/compute/kernels/aggregate_internal.h
 +++ b/cpp/src/arrow/compute/kernels/aggregate_internal.h
+@@ -27,7 +27,7 @@
+ #include "arrow/util/int128_internal.h"
+ #include "arrow/util/logging.h"
+ 
+-namespace arrow::compute::internal {
++namespace arrow::compute::internal::vendored {
+ 
+ // Find the largest compatible primitive type for a primitive type.
+ template <typename I, typename Enable = void>
 @@ -53,16 +53,6 @@ struct FindAccumulatorType<I, enable_if_floating_point<I>> {
    using Type = DoubleType;
  };
@@ -539,6 +708,15 @@ index 23aa20eddc..0282657841 100644
  template <typename I>
  struct FindAccumulatorType<I, enable_if_decimal128<I>> {
    using Type = Decimal128Type;
+@@ -82,7 +72,7 @@ struct MultiplyTraits {
+   constexpr static CType one(const DataType&) { return static_cast<CType>(1); }
+ 
+   constexpr static CType Multiply(const DataType&, CType lhs, CType rhs) {
+-    return static_cast<CType>(internal::to_unsigned(lhs) * internal::to_unsigned(rhs));
++    return static_cast<CType>(to_unsigned(lhs) * to_unsigned(rhs));
+   }
+ };
+ 
 diff --git a/cpp/src/arrow/compute/kernels/aggregate_pivot.cc b/cpp/src/arrow/compute/kernels/aggregate_pivot.cc
 index bcc2f53ac1..47c11ec8bf 100644
 --- a/cpp/src/arrow/compute/kernels/aggregate_pivot.cc
@@ -605,11 +783,39 @@ index 5bc8233016..2884acb541 100644
    util::span<const Array* const> chunks_;
    std::vector<const Array*> owned_chunks_;
  
+diff --git a/cpp/src/arrow/compute/kernels/codegen_internal.cc b/cpp/src/arrow/compute/kernels/codegen_internal.cc
+index 0fd9cae7a8..c7f8c30b74 100644
+--- a/cpp/src/arrow/compute/kernels/codegen_internal.cc
++++ b/cpp/src/arrow/compute/kernels/codegen_internal.cc
+@@ -29,6 +29,7 @@
+ namespace arrow {
+ namespace compute {
+ namespace internal {
++namespace vendored {
+ 
+ const std::vector<std::shared_ptr<DataType>>& ExampleParametricTypes() {
+   static DataTypeVector example_parametric_types = {
+@@ -551,6 +552,7 @@ void PromoteIntegerForDurationArithmetic(std::vector<TypeHolder>* types) {
+   }
+ }
+ 
++}  // namespace vendored
+ }  // namespace internal
+ }  // namespace compute
+ }  // namespace arrow
 diff --git a/cpp/src/arrow/compute/kernels/codegen_internal.h b/cpp/src/arrow/compute/kernels/codegen_internal.h
-index 2a492f581f..0832399be4 100644
+index 2a492f581f..ca021845e1 100644
 --- a/cpp/src/arrow/compute/kernels/codegen_internal.h
 +++ b/cpp/src/arrow/compute/kernels/codegen_internal.h
-@@ -141,29 +141,6 @@ struct GetViewType<Type, enable_if_t<is_base_binary_type<Type>::value ||
+@@ -63,6 +63,7 @@ using internal::VisitTwoBitBlocksVoid;
+ 
+ namespace compute {
+ namespace internal {
++namespace vendored {
+ 
+ /// KernelState adapter for the common case of kernels whose only
+ /// state is an instance of a subclass of FunctionOptions.
+@@ -141,29 +142,6 @@ struct GetViewType<Type, enable_if_t<is_base_binary_type<Type>::value ||
    static T LogicalValue(PhysicalType value) { return value; }
  };
  
@@ -639,7 +845,7 @@ index 2a492f581f..0832399be4 100644
  
  template <>
  struct GetViewType<Decimal128Type> {
-@@ -202,16 +179,6 @@ struct GetOutputType<Type, enable_if_t<is_string_like_type<Type>::value>> {
+@@ -202,16 +180,6 @@ struct GetOutputType<Type, enable_if_t<is_string_like_type<Type>::value>> {
    using T = std::string;
  };
  
@@ -656,7 +862,7 @@ index 2a492f581f..0832399be4 100644
  template <>
  struct GetOutputType<Decimal128Type> {
    using T = Decimal128;
-@@ -259,8 +226,7 @@ using enable_if_not_floating_value = enable_if_t<!std::is_floating_point<T>::val
+@@ -259,8 +227,7 @@ using enable_if_not_floating_value = enable_if_t<!std::is_floating_point<T>::val
  
  template <typename T, typename R = T>
  using enable_if_decimal_value =
@@ -666,7 +872,7 @@ index 2a492f581f..0832399be4 100644
                      std::is_same<Decimal256, T>::value,
                  R>;
  
-@@ -390,21 +356,6 @@ struct UnboxScalar<Type, enable_if_has_string_view<Type>> {
+@@ -390,21 +357,6 @@ struct UnboxScalar<Type, enable_if_has_string_view<Type>> {
    }
  };
  
@@ -688,7 +894,7 @@ index 2a492f581f..0832399be4 100644
  
  template <>
  struct UnboxScalar<Decimal128Type> {
-@@ -1170,10 +1121,6 @@ ArrayKernelExec GeneratePhysicalNumeric(detail::GetTypeId get_id) {
+@@ -1170,10 +1122,6 @@ ArrayKernelExec GeneratePhysicalNumeric(detail::GetTypeId get_id) {
  template <template <typename... Args> class Generator, typename... Args>
  ArrayKernelExec GenerateDecimalToDecimal(detail::GetTypeId get_id) {
    switch (get_id.id) {
@@ -699,7 +905,7 @@ index 2a492f581f..0832399be4 100644
      case Type::DECIMAL128:
        return Generator<Decimal128Type, Args...>::Exec;
      case Type::DECIMAL256:
-@@ -1369,10 +1316,6 @@ ArrayKernelExec GenerateTemporal(detail::GetTypeId get_id) {
+@@ -1369,10 +1317,6 @@ ArrayKernelExec GenerateTemporal(detail::GetTypeId get_id) {
  template <template <typename...> class Generator, typename Type0, typename... Args>
  ArrayKernelExec GenerateDecimal(detail::GetTypeId get_id) {
    switch (get_id.id) {
@@ -710,8 +916,58 @@ index 2a492f581f..0832399be4 100644
      case Type::DECIMAL128:
        return Generator<Type0, Decimal128Type, Args...>::Exec;
      case Type::DECIMAL256:
+@@ -1449,6 +1393,7 @@ void PromoteIntegerForDurationArithmetic(std::vector<TypeHolder>* types);
+ 
+ // END of DispatchBest helpers
+ // ----------------------------------------------------------------------
++}  // namespace vendored
+ }  // namespace internal
+ }  // namespace compute
+ }  // namespace arrow
+diff --git a/cpp/src/arrow/compute/kernels/hash_aggregate.cc b/cpp/src/arrow/compute/kernels/hash_aggregate.cc
+index 18a5590b2e..100d6abb0c 100644
+--- a/cpp/src/arrow/compute/kernels/hash_aggregate.cc
++++ b/cpp/src/arrow/compute/kernels/hash_aggregate.cc
+@@ -291,18 +291,6 @@ struct AntiExtrema<double> {
+   static constexpr double anti_max() { return -std::numeric_limits<double>::infinity(); }
+ };
+ 
+-template <>
+-struct AntiExtrema<Decimal32> {
+-  static constexpr Decimal32 anti_min() { return BasicDecimal32::GetMaxSentinel(); }
+-  static constexpr Decimal32 anti_max() { return BasicDecimal32::GetMinSentinel(); }
+-};
+-
+-template <>
+-struct AntiExtrema<Decimal64> {
+-  static constexpr Decimal64 anti_min() { return BasicDecimal64::GetMaxSentinel(); }
+-  static constexpr Decimal64 anti_max() { return BasicDecimal64::GetMinSentinel(); }
+-};
+-
+ template <>
+ struct AntiExtrema<Decimal128> {
+   static constexpr Decimal128 anti_min() { return BasicDecimal128::GetMaxSentinel(); }
+diff --git a/cpp/src/arrow/compute/kernels/hash_aggregate_internal.h b/cpp/src/arrow/compute/kernels/hash_aggregate_internal.h
+index 9ea4cdfcc5..ff6b2cb840 100644
+--- a/cpp/src/arrow/compute/kernels/hash_aggregate_internal.h
++++ b/cpp/src/arrow/compute/kernels/hash_aggregate_internal.h
+@@ -31,7 +31,7 @@
+ #include "arrow/type_traits.h"
+ #include "arrow/util/bit_util.h"
+ 
+-namespace arrow::compute::internal {
++namespace arrow::compute::internal::vendored {
+ 
+ /// C++ abstract base class for the HashAggregateKernel interface.
+ /// Implementations should be default constructible and perform initialization in
+@@ -205,4 +205,4 @@ void VisitGroupedValuesNonNull(const ExecSpan& batch, ConsumeValue&& valid_func)
+                            [](uint32_t) {});
+ }
+ 
+-}  // namespace arrow::compute::internal
++}  // namespace arrow::compute::internal::vendored
 diff --git a/cpp/src/arrow/compute/kernels/hash_aggregate_pivot.cc b/cpp/src/arrow/compute/kernels/hash_aggregate_pivot.cc
-index c3dc070e4f..d2e25a2005 100644
+index c3dc070e4f..3c271ea64e 100644
 --- a/cpp/src/arrow/compute/kernels/hash_aggregate_pivot.cc
 +++ b/cpp/src/arrow/compute/kernels/hash_aggregate_pivot.cc
 @@ -33,7 +33,7 @@
@@ -732,6 +988,12 @@ index c3dc070e4f..d2e25a2005 100644
      for (auto key_type : BaseBinaryTypes()) {
        // Anything that scatter() (i.e. take()) accepts can be passed as values
        auto sig = KernelSignature::Make(
+@@ -469,4 +469,4 @@ void RegisterHashAggregatePivot(FunctionRegistry* registry) {
+   }
+ }
+ 
+-}  // namespace arrow::compute::internal
++}  // namespace arrow::compute::internal::vendored
 diff --git a/cpp/src/arrow/compute/kernels/pivot_internal.cc b/cpp/src/arrow/compute/kernels/pivot_internal.cc
 index 7a65ddc212..6d120ee206 100644
 --- a/cpp/src/arrow/compute/kernels/pivot_internal.cc
@@ -758,6 +1020,46 @@ index faa808b7a2..d40c8d0bb4 100644
  
  using PivotWiderKeyIndex = uint8_t;
  
+diff --git a/cpp/src/arrow/compute/kernels/util_internal.cc b/cpp/src/arrow/compute/kernels/util_internal.cc
+index 50d31362f1..bd28f46f15 100644
+--- a/cpp/src/arrow/compute/kernels/util_internal.cc
++++ b/cpp/src/arrow/compute/kernels/util_internal.cc
+@@ -30,6 +30,7 @@ using internal::checked_cast;
+ 
+ namespace compute {
+ namespace internal {
++namespace vendored {
+ 
+ namespace {
+ 
+@@ -63,6 +64,7 @@ void AddNullExec(ScalarFunction* func) {
+   DCHECK_OK(func->AddKernel(std::move(input_types), OutputType(null()), NullToNullExec));
+ }
+ 
++}  // namespace vendored
+ }  // namespace internal
+ }  // namespace compute
+ }  // namespace arrow
+diff --git a/cpp/src/arrow/compute/kernels/util_internal.h b/cpp/src/arrow/compute/kernels/util_internal.h
+index 1fe139c117..fea125a26a 100644
+--- a/cpp/src/arrow/compute/kernels/util_internal.h
++++ b/cpp/src/arrow/compute/kernels/util_internal.h
+@@ -39,6 +39,7 @@ namespace compute {
+ class ScalarFunction;
+ 
+ namespace internal {
++namespace vendored {
+ 
+ template <typename T>
+ using maybe_make_unsigned =
+@@ -155,6 +156,7 @@ ArrayKernelExec GenerateArithmeticFloatingPoint(detail::GetTypeId get_id) {
+ // A scalar kernel that ignores (assumed all-null) inputs and returns null.
+ void AddNullExec(ScalarFunction* func);
+ 
++}  // namespace vendored
+ }  // namespace internal
+ }  // namespace compute
+ }  // namespace arrow
 diff --git a/cpp/src/arrow/compute/kernels/vector_rank.cc b/cpp/src/arrow/compute/kernels/vector_rank.cc
 index d1323c2030..fd78ca7ca1 100644
 --- a/cpp/src/arrow/compute/kernels/vector_rank.cc
