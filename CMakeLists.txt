@@ -22,7 +22,7 @@ add_library(arrow_kernel_loader SHARED
         ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/api_aggregate.cc
         ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/kernels/pivot_internal.cc
         ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/kernels/aggregate_pivot.cc
-        ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/kernels/hash_aggregate.cc
+        ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/kernels/hash_aggregate_pivot.cc
         src/load_kernels.cc)
 
 # Link Arrow libraries
