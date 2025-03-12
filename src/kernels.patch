@@ -759,7 +759,7 @@ index faa808b7a2..d40c8d0bb4 100644
  using PivotWiderKeyIndex = uint8_t;
  
 diff --git a/cpp/src/arrow/compute/kernels/vector_rank.cc b/cpp/src/arrow/compute/kernels/vector_rank.cc
-index d1323c2030..73c050d933 100644
+index d1323c2030..fd78ca7ca1 100644
 --- a/cpp/src/arrow/compute/kernels/vector_rank.cc
 +++ b/cpp/src/arrow/compute/kernels/vector_rank.cc
 @@ -23,7 +23,7 @@
@@ -780,6 +780,15 @@ index d1323c2030..73c050d933 100644
  
    ArrayType array(input.data());
    ARROW_ASSIGN_OR_RAISE(auto sorted,
+@@ -200,7 +200,7 @@ struct QuantileRanker : public BaseQuantileRanker<QuantileRanker> {
+ // A derived class that emits rankings for the "rank_normal" function
+ struct NormalRanker : public BaseQuantileRanker<NormalRanker> {
+   static double TransformValue(double quantile) {
+-    return ::arrow::internal::NormalPPF(quantile);
++    return ::arrow::internal::vendored::NormalPPF(quantile);
+   }
+ };
+ 
 @@ -380,7 +380,7 @@ class RankMetaFunction : public RankMetaFunctionBase<RankMetaFunction> {
    }
  
@@ -897,6 +906,44 @@ index 6288aa26ea..fc03e187c6 100644
 +const std::shared_ptr<DataType>& physical_type, const ArrayVector& physical_chunks,
 +SortOrder sort_order, NullPlacement null_placement);
  }  // namespace arrow::compute::internal
+diff --git a/cpp/src/arrow/util/math_internal.cc b/cpp/src/arrow/util/math_internal.cc
+index 604af45a49..32fd7e7963 100644
+--- a/cpp/src/arrow/util/math_internal.cc
++++ b/cpp/src/arrow/util/math_internal.cc
+@@ -21,7 +21,7 @@
+ 
+ #include "arrow/util/logging.h"
+ 
+-namespace arrow::internal {
++namespace arrow::internal::vendored {
+ 
+ double NormalPPF(double p) {
+   DCHECK(p >= 0.0 && p <= 1.0);
+@@ -127,4 +127,4 @@ double NormalPPF(double p) {
+   }
+ }
+ 
+-}  // namespace arrow::internal
++}  // namespace arrow::internal::vendored
+diff --git a/cpp/src/arrow/util/math_internal.h b/cpp/src/arrow/util/math_internal.h
+index 3ff30cabf2..d5374a35d0 100644
+--- a/cpp/src/arrow/util/math_internal.h
++++ b/cpp/src/arrow/util/math_internal.h
+@@ -24,7 +24,7 @@
+ #include "arrow/util/macros.h"
+ #include "arrow/util/visibility.h"
+ 
+-namespace arrow::internal {
++namespace arrow::internal::vendored {
+ 
+ /// \brief Percent-point / quantile function (PPF) of the normal distribution.
+ ///
+@@ -59,4 +59,4 @@ double NeumaierSum(Range&& inputs) {
+   return sum + c;
+ }
+ 
+-}  // namespace arrow::internal
++}  // namespace arrow::internal::vendored
 diff --git a/cpp/src/arrow/util/reflection_internal.h b/cpp/src/arrow/util/reflection_internal.h
 index 5d281a265f..62cb2cda7b 100644
 --- a/cpp/src/arrow/util/reflection_internal.h
