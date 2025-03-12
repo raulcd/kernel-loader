@@ -57,9 +57,6 @@ mv arrow_tmp/arrow-${sha}/cpp/src/arrow/util/int128_internal.h arrow_vendored/cp
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/common_internal.h arrow_vendored/cpp/src/arrow/compute/kernels/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/pivot_internal.cc arrow_vendored/cpp/src/arrow/compute/kernels/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/pivot_internal.h arrow_vendored/cpp/src/arrow/compute/kernels/
-# Specific for hash_pivot
-mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/aggregate_var_std_internal.h arrow_vendored/cpp/src/arrow/compute/kernels/
-mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/row/row_encoder_internal.h arrow_vendored/cpp/src/arrow/compute/row/
 
 # Build the kernel loader
 cmake \
