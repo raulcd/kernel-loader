@@ -35,6 +35,7 @@ mkdir -p arrow_vendored/cpp/src/arrow/util
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/api_vector.cc arrow_vendored/cpp/src/arrow/compute/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/api_vector.h arrow_vendored/cpp/src/arrow/compute/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/function_internal.h arrow_vendored/cpp/src/arrow/compute/
+mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/function_internal.cc arrow_vendored/cpp/src/arrow/compute/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/chunked_internal.cc arrow_vendored/cpp/src/arrow/compute/kernels/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/util/math_internal.h arrow_vendored/cpp/src/arrow/util/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/util/math_internal.cc arrow_vendored/cpp/src/arrow/util/
