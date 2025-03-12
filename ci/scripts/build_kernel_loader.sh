@@ -10,7 +10,7 @@ pushd ${build_dir}
 mkdir arrow_tmp
 pushd arrow_tmp
 
-sha="ffd651a1298a7e7f97aad83aa51f636d80fe46a3"
+sha="42b215bcaf842eba5adc9c983f69e15f995b7e12"
 
 # Download Arrow source code
 url="https://github.com/apache/arrow/archive/${sha}.zip"
@@ -49,7 +49,8 @@ mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/vector_rank.cc arrow_ven
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/api_aggregate.cc arrow_vendored/cpp/src/arrow/compute/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/api_aggregate.h arrow_vendored/cpp/src/arrow/compute/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/aggregate_pivot.cc arrow_vendored/cpp/src/arrow/compute/kernels/
-mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/hash_aggregate.cc arrow_vendored/cpp/src/arrow/compute/kernels/
+mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/hash_aggregate_pivot.cc arrow_vendored/cpp/src/arrow/compute/kernels/
+mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/hash_aggregate_internal.h arrow_vendored/cpp/src/arrow/compute/kernels/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/aggregate_internal.h arrow_vendored/cpp/src/arrow/compute/kernels/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/util_internal.h arrow_vendored/cpp/src/arrow/compute/kernels/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/util/int128_internal.h arrow_vendored/cpp/src/arrow/util/
