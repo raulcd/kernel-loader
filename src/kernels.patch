@@ -440,8 +440,28 @@ index 22bb164719..1bcc2362cc 100644
 +}  // namespace internal::vendored
  }  // namespace compute
  }  // namespace arrow
+diff --git a/cpp/src/arrow/compute/function_internal.cc b/cpp/src/arrow/compute/function_internal.cc
+index 8d85254209..a8d66216e3 100644
+--- a/cpp/src/arrow/compute/function_internal.cc
++++ b/cpp/src/arrow/compute/function_internal.cc
+@@ -34,6 +34,7 @@
+ namespace arrow {
+ namespace compute {
+ namespace internal {
++namespace vendored {
+ using ::arrow::internal::checked_cast;
+ 
+ constexpr char kTypeNameField[] = "_type_name";
+@@ -143,6 +144,7 @@ Result<std::vector<TypeHolder>> GetFunctionArgumentTypes(const std::vector<Datum
+   return inputs;
+ }
+ 
++}  // namespace vendored
+ }  // namespace internal
+ }  // namespace compute
+ }  // namespace arrow
 diff --git a/cpp/src/arrow/compute/function_internal.h b/cpp/src/arrow/compute/function_internal.h
-index 9d8928466b..5f9a607ee9 100644
+index 9d8928466b..5e102409d6 100644
 --- a/cpp/src/arrow/compute/function_internal.h
 +++ b/cpp/src/arrow/compute/function_internal.h
 @@ -42,6 +42,7 @@ struct StructScalar;
@@ -452,7 +472,7 @@ index 9d8928466b..5f9a607ee9 100644
  template <>
  struct EnumTraits<compute::SortOrder>
      : BasicEnumTraits<compute::SortOrder, compute::SortOrder::Ascending,
-@@ -57,13 +58,14 @@ struct EnumTraits<compute::SortOrder>
+@@ -57,13 +58,15 @@ struct EnumTraits<compute::SortOrder>
      return "<INVALID>";
    }
  };
@@ -461,6 +481,7 @@ index 9d8928466b..5f9a607ee9 100644
  
  namespace compute {
  namespace internal {
++namespace vendored {
  
 -using arrow::internal::EnumTraits;
 -using arrow::internal::has_enum_traits;
@@ -469,7 +490,7 @@ index 9d8928466b..5f9a607ee9 100644
  
  template <typename Enum, typename CType = typename std::underlying_type<Enum>::type>
  Result<Enum> ValidateEnumValue(CType raw) {
-@@ -656,7 +658,7 @@ template <typename Options, typename... Properties>
+@@ -656,7 +659,7 @@ template <typename Options, typename... Properties>
  const FunctionOptionsType* GetFunctionOptionsType(const Properties&... properties) {
    static const class OptionsType : public GenericOptionsType {
     public:
@@ -478,7 +499,7 @@ index 9d8928466b..5f9a607ee9 100644
          : properties_(properties) {}
  
      const char* type_name() const override { return Options::kTypeName; }
-@@ -694,8 +696,8 @@ const FunctionOptionsType* GetFunctionOptionsType(const Properties&... propertie
+@@ -694,8 +697,8 @@ const FunctionOptionsType* GetFunctionOptionsType(const Properties&... propertie
      }
  
     private:
@@ -489,6 +510,14 @@ index 9d8928466b..5f9a607ee9 100644
    return &instance;
  }
  
+@@ -704,6 +707,7 @@ Status CheckAllArrayOrScalar(const std::vector<Datum>& values);
+ ARROW_EXPORT
+ Result<std::vector<TypeHolder>> GetFunctionArgumentTypes(const std::vector<Datum>& args);
+ 
++}  // namespace vendored
+ }  // namespace internal
+ }  // namespace compute
+ }  // namespace arrow
 diff --git a/cpp/src/arrow/compute/kernels/aggregate_internal.h b/cpp/src/arrow/compute/kernels/aggregate_internal.h
 index 23aa20eddc..0282657841 100644
 --- a/cpp/src/arrow/compute/kernels/aggregate_internal.h
