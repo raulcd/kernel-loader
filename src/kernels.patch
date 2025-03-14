@@ -1,29 +1,3 @@
-diff --git a/cpp/src/arrow/chunk_resolver.cc b/cpp/src/arrow/chunk_resolver.cc
-index 7fc259f38c..2d9d50b337 100644
---- a/cpp/src/arrow/chunk_resolver.cc
-+++ b/cpp/src/arrow/chunk_resolver.cc
-@@ -26,7 +26,7 @@
- #include "arrow/array.h"
- #include "arrow/record_batch.h"
- 
--namespace arrow {
-+namespace arrow::internal {
- 
- using util::span;
- 
-diff --git a/cpp/src/arrow/chunk_resolver.h b/cpp/src/arrow/chunk_resolver.h
-index 3d6458167f..75f4d19b1f 100644
---- a/cpp/src/arrow/chunk_resolver.h
-+++ b/cpp/src/arrow/chunk_resolver.h
-@@ -28,7 +28,7 @@
- #include "arrow/util/macros.h"
- #include "arrow/util/span.h"
- 
--namespace arrow {
-+namespace arrow::internal {
- 
- class ChunkResolver;
- 
 diff --git a/cpp/src/arrow/compute/api_aggregate.cc b/cpp/src/arrow/compute/api_aggregate.cc
 index 20d3ce2faf..571310d23b 100644
 --- a/cpp/src/arrow/compute/api_aggregate.cc
@@ -679,7 +653,7 @@ index 5cc3a558b1..1908015d24 100644
                       SimdLevel::type simd_level = SimdLevel::NONE);
  
 diff --git a/cpp/src/arrow/compute/kernels/aggregate_internal.h b/cpp/src/arrow/compute/kernels/aggregate_internal.h
-index 23aa20eddc..4c15bfcc72 100644
+index 23aa20eddc..6425821399 100644
 --- a/cpp/src/arrow/compute/kernels/aggregate_internal.h
 +++ b/cpp/src/arrow/compute/kernels/aggregate_internal.h
 @@ -27,7 +27,7 @@
@@ -691,24 +665,7 @@ index 23aa20eddc..4c15bfcc72 100644
  
  // Find the largest compatible primitive type for a primitive type.
  template <typename I, typename Enable = void>
-@@ -53,16 +53,6 @@ struct FindAccumulatorType<I, enable_if_floating_point<I>> {
-   using Type = DoubleType;
- };
- 
--template <typename I>
--struct FindAccumulatorType<I, enable_if_decimal32<I>> {
--  using Type = Decimal32Type;
--};
--
--template <typename I>
--struct FindAccumulatorType<I, enable_if_decimal64<I>> {
--  using Type = Decimal64Type;
--};
--
- template <typename I>
- struct FindAccumulatorType<I, enable_if_decimal128<I>> {
-   using Type = Decimal128Type;
-@@ -82,7 +72,7 @@ struct MultiplyTraits {
+@@ -82,7 +82,7 @@ struct MultiplyTraits {
    constexpr static CType one(const DataType&) { return static_cast<CType>(1); }
  
    constexpr static CType Multiply(const DataType&, CType lhs, CType rhs) {
@@ -740,7 +697,7 @@ index bcc2f53ac1..47c11ec8bf 100644
    for (auto key_type : BaseBinaryTypes()) {
      auto sig = KernelSignature::Make({key_type->id(), InputType::Any()},
 diff --git a/cpp/src/arrow/compute/kernels/chunked_internal.cc b/cpp/src/arrow/compute/kernels/chunked_internal.cc
-index e72b8e1f5b..dcc72c427c 100644
+index e72b8e1f5b..abddc53f96 100644
 --- a/cpp/src/arrow/compute/kernels/chunked_internal.cc
 +++ b/cpp/src/arrow/compute/kernels/chunked_internal.cc
 @@ -22,7 +22,7 @@
@@ -752,8 +709,14 @@ index e72b8e1f5b..dcc72c427c 100644
  
  std::vector<const Array*> GetArrayPointers(const ArrayVector& arrays) {
    std::vector<const Array*> pointers(arrays.size());
+@@ -119,4 +119,4 @@ Status ChunkedIndexMapper::PhysicalToLogical() {
+   return Status::OK();
+ }
+ 
+-}  // namespace arrow::compute::internal
++}  // namespace arrow::compute::internal::vendored
 diff --git a/cpp/src/arrow/compute/kernels/chunked_internal.h b/cpp/src/arrow/compute/kernels/chunked_internal.h
-index 5bc8233016..2884acb541 100644
+index 5bc8233016..916f02957e 100644
 --- a/cpp/src/arrow/compute/kernels/chunked_internal.h
 +++ b/cpp/src/arrow/compute/kernels/chunked_internal.h
 @@ -28,7 +28,7 @@
@@ -765,24 +728,6 @@ index 5bc8233016..2884acb541 100644
  
  // The target chunk in a chunked array.
  struct ResolvedChunk {
-@@ -77,7 +77,7 @@ struct CompressedChunkLocation {
-       : data_((index_in_chunk << kChunkIndexBits) | chunk_index) {}
- 
-   template <typename IndexType>
--  explicit operator TypedChunkLocation<IndexType>() {
-+  explicit operator arrow::internal::TypedChunkLocation<IndexType>() {
-     return {static_cast<IndexType>(chunk_index()),
-             static_cast<IndexType>(index_in_chunk())};
-   }
-@@ -90,7 +90,7 @@ static_assert(sizeof(uint64_t) == sizeof(CompressedChunkLocation));
- 
- class ChunkedArrayResolver {
-  private:
--  ChunkResolver resolver_;
-+  ::arrow::internal::ChunkResolver resolver_;
-   util::span<const Array* const> chunks_;
-   std::vector<const Array*> owned_chunks_;
- 
 diff --git a/cpp/src/arrow/compute/kernels/codegen_internal.cc b/cpp/src/arrow/compute/kernels/codegen_internal.cc
 index 0fd9cae7a8..c7f8c30b74 100644
 --- a/cpp/src/arrow/compute/kernels/codegen_internal.cc
@@ -804,7 +749,7 @@ index 0fd9cae7a8..c7f8c30b74 100644
  }  // namespace compute
  }  // namespace arrow
 diff --git a/cpp/src/arrow/compute/kernels/codegen_internal.h b/cpp/src/arrow/compute/kernels/codegen_internal.h
-index 2a492f581f..ca021845e1 100644
+index 2a492f581f..09faca119f 100644
 --- a/cpp/src/arrow/compute/kernels/codegen_internal.h
 +++ b/cpp/src/arrow/compute/kernels/codegen_internal.h
 @@ -63,6 +63,7 @@ using internal::VisitTwoBitBlocksVoid;
@@ -815,108 +760,7 @@ index 2a492f581f..ca021845e1 100644
  
  /// KernelState adapter for the common case of kernels whose only
  /// state is an instance of a subclass of FunctionOptions.
-@@ -141,29 +142,6 @@ struct GetViewType<Type, enable_if_t<is_base_binary_type<Type>::value ||
-   static T LogicalValue(PhysicalType value) { return value; }
- };
- 
--template <>
--struct GetViewType<Decimal32Type> {
--  using T = Decimal32;
--  using PhysicalType = std::string_view;
--
--  static T LogicalValue(PhysicalType value) {
--    return Decimal32(reinterpret_cast<const uint8_t*>(value.data()));
--  }
--
--  static T LogicalValue(T value) { return value; }
--};
--
--template <>
--struct GetViewType<Decimal64Type> {
--  using T = Decimal64;
--  using PhysicalType = std::string_view;
--
--  static T LogicalValue(PhysicalType value) {
--    return Decimal64(reinterpret_cast<const uint8_t*>(value.data()));
--  }
--
--  static T LogicalValue(T value) { return value; }
--};
- 
- template <>
- struct GetViewType<Decimal128Type> {
-@@ -202,16 +180,6 @@ struct GetOutputType<Type, enable_if_t<is_string_like_type<Type>::value>> {
-   using T = std::string;
- };
- 
--template <>
--struct GetOutputType<Decimal32Type> {
--  using T = Decimal32;
--};
--
--template <>
--struct GetOutputType<Decimal64Type> {
--  using T = Decimal64;
--};
--
- template <>
- struct GetOutputType<Decimal128Type> {
-   using T = Decimal128;
-@@ -259,8 +227,7 @@ using enable_if_not_floating_value = enable_if_t<!std::is_floating_point<T>::val
- 
- template <typename T, typename R = T>
- using enable_if_decimal_value =
--    enable_if_t<std::is_same<Decimal32, T>::value || std::is_same<Decimal64, T>::value ||
--                    std::is_same<Decimal128, T>::value ||
-+    enable_if_t<std::is_same<Decimal128, T>::value ||
-                     std::is_same<Decimal256, T>::value,
-                 R>;
- 
-@@ -390,21 +357,6 @@ struct UnboxScalar<Type, enable_if_has_string_view<Type>> {
-   }
- };
- 
--template <>
--struct UnboxScalar<Decimal32Type> {
--  using T = Decimal32;
--  static const T& Unbox(const Scalar& val) {
--    return checked_cast<const Decimal32Scalar&>(val).value;
--  }
--};
--
--template <>
--struct UnboxScalar<Decimal64Type> {
--  using T = Decimal64;
--  static const T& Unbox(const Scalar& val) {
--    return checked_cast<const Decimal64Scalar&>(val).value;
--  }
--};
- 
- template <>
- struct UnboxScalar<Decimal128Type> {
-@@ -1170,10 +1122,6 @@ ArrayKernelExec GeneratePhysicalNumeric(detail::GetTypeId get_id) {
- template <template <typename... Args> class Generator, typename... Args>
- ArrayKernelExec GenerateDecimalToDecimal(detail::GetTypeId get_id) {
-   switch (get_id.id) {
--    case Type::DECIMAL32:
--      return Generator<Decimal32Type, Args...>::Exec;
--    case Type::DECIMAL64:
--      return Generator<Decimal64Type, Args...>::Exec;
-     case Type::DECIMAL128:
-       return Generator<Decimal128Type, Args...>::Exec;
-     case Type::DECIMAL256:
-@@ -1369,10 +1317,6 @@ ArrayKernelExec GenerateTemporal(detail::GetTypeId get_id) {
- template <template <typename...> class Generator, typename Type0, typename... Args>
- ArrayKernelExec GenerateDecimal(detail::GetTypeId get_id) {
-   switch (get_id.id) {
--    case Type::DECIMAL32:
--      return Generator<Type0, Decimal32Type, Args...>::Exec;
--    case Type::DECIMAL64:
--      return Generator<Type0, Decimal64Type, Args...>::Exec;
-     case Type::DECIMAL128:
-       return Generator<Type0, Decimal128Type, Args...>::Exec;
-     case Type::DECIMAL256:
-@@ -1449,6 +1393,7 @@ void PromoteIntegerForDurationArithmetic(std::vector<TypeHolder>* types);
+@@ -1449,6 +1450,7 @@ void PromoteIntegerForDurationArithmetic(std::vector<TypeHolder>* types);
  
  // END of DispatchBest helpers
  // ----------------------------------------------------------------------
@@ -1102,7 +946,7 @@ index d1323c2030..fd78ca7ca1 100644
 -}  // namespace arrow::compute::internal
 +}  // namespace arrow::compute::internal::vendored
 diff --git a/cpp/src/arrow/compute/kernels/vector_sort_internal.h b/cpp/src/arrow/compute/kernels/vector_sort_internal.h
-index 6288aa26ea..fc03e187c6 100644
+index 6288aa26ea..4bc29e8646 100644
 --- a/cpp/src/arrow/compute/kernels/vector_sort_internal.h
 +++ b/cpp/src/arrow/compute/kernels/vector_sort_internal.h
 @@ -31,6 +31,8 @@
@@ -1141,18 +985,6 @@ index 6288aa26ea..fc03e187c6 100644
  Result<NullPartitionResult> SortStructArray(ExecContext* ctx, uint64_t* indices_begin,
                                              uint64_t* indices_end,
                                              const StructArray& array,
-@@ -761,9 +743,9 @@ struct ResolvedTableSortKey {
-         order(order),
-         null_count(null_count) {}
- 
--  using LocationType = ::arrow::ChunkLocation;
-+  using LocationType = ::arrow::internal::ChunkLocation;
- 
--  ResolvedChunk GetChunk(::arrow::ChunkLocation loc) const {
-+  ResolvedChunk GetChunk(::arrow::internal::ChunkLocation loc) const {
-     return {chunks[loc.chunk_index], loc.index_in_chunk};
-   }
- 
 @@ -788,7 +770,7 @@ struct ResolvedTableSortKey {
                                    null_count);
      };
