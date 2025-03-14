@@ -19,7 +19,6 @@ add_library(arrow_kernel_loader SHARED
         ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/kernels/codegen_internal.cc
         ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/kernels/util_internal.cc
         ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/kernels/chunked_internal.cc
-        ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/chunk_resolver.cc
         ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/api_vector.cc
         ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/kernels/vector_rank.cc
         ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/api_aggregate.cc
