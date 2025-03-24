@@ -703,6 +703,123 @@ index 3ff6327ec9..bfa66cc696 100644
  
    for (auto key_type : BaseBinaryTypes()) {
      auto sig = KernelSignature::Make({key_type->id(), InputType::Any()},
+diff --git a/cpp/src/arrow/compute/kernels/aggregate_var_std.cc b/cpp/src/arrow/compute/kernels/aggregate_var_std.cc
+index 021ca712c5..36a47dac11 100644
+--- a/cpp/src/arrow/compute/kernels/aggregate_var_std.cc
++++ b/cpp/src/arrow/compute/kernels/aggregate_var_std.cc
+@@ -27,7 +27,7 @@
+ #include "arrow/util/checked_cast.h"
+ #include "arrow/util/int128_internal.h"
+ 
+-namespace arrow::compute::internal {
++namespace arrow::compute::internal::vendored {
+ 
+ using ::arrow::internal::checked_cast;
+ 
+@@ -40,7 +40,7 @@ template <typename ArrowType>
+ struct MomentsState {
+   using ArrayType = typename TypeTraits<ArrowType>::ArrayType;
+   using CType = typename TypeTraits<ArrowType>::CType;
+-  using SumType = typename internal::GetSumType<ArrowType>::SumType;
++  using SumType = typename internal::vendored::GetSumType<ArrowType>::SumType;
+   using ThisType = MomentsState<ArrowType>;
+ 
+   MomentsState(int level, int32_t decimal_scale, bool skip_nulls)
+@@ -107,23 +107,23 @@ struct MomentsState {
+ 
+     // float/double/int64/decimal: calculate each moment in a separate pass.
+     // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Two-pass_algorithm
+-    SumType sum = internal::SumArray<CType, SumType, SimdLevel::NONE>(array);
++    SumType sum = internal::vendored::SumArray<CType, SumType, SimdLevel::NONE>(array);
+ 
+     const double mean = ToDouble(sum) / valid_count;
+-    const double m2 = internal::SumArray<CType, double, SimdLevel::NONE>(
++    const double m2 = internal::vendored::SumArray<CType, double, SimdLevel::NONE>(
+         array, [this, mean](CType value) {
+           const double v = ToDouble(value);
+           return (v - mean) * (v - mean);
+         });
+     double m3 = 0, m4 = 0;
+     if (level >= 3) {
+-      m3 = internal::SumArray<CType, double, SimdLevel::NONE>(
++      m3 = internal::vendored::SumArray<CType, double, SimdLevel::NONE>(
+           array, [this, mean](CType value) {
+             const double v = ToDouble(value);
+             return (v - mean) * (v - mean) * (v - mean);
+           });
+       if (level >= 4) {
+-        m4 = internal::SumArray<CType, double, SimdLevel::NONE>(
++        m4 = internal::vendored::SumArray<CType, double, SimdLevel::NONE>(
+             array, [this, mean](CType value) {
+               const double v = ToDouble(value);
+               return (v - mean) * (v - mean) * (v - mean) * (v - mean);
+@@ -320,25 +320,9 @@ const FunctionDoc kurtosis_doc{
+     {"array"},
+     "SkewOptions"};
+ 
+-std::shared_ptr<ScalarAggregateFunction> AddStddevAggKernels() {
+-  static const auto default_std_options = VarianceOptions::Defaults();
+-  auto func = std::make_shared<ScalarAggregateFunction>("stddev", Arity::Unary(),
+-                                                        stddev_doc, &default_std_options);
+-  AddStatisticKernels(StatisticInit<VarianceOptions, StatisticType::Std>, func.get());
+-  return func;
+-}
+-
+-std::shared_ptr<ScalarAggregateFunction> AddVarianceAggKernels() {
+-  static const auto default_var_options = VarianceOptions::Defaults();
+-  auto func = std::make_shared<ScalarAggregateFunction>(
+-      "variance", Arity::Unary(), variance_doc, &default_var_options);
+-  AddStatisticKernels(StatisticInit<VarianceOptions, StatisticType::Var>, func.get());
+-  return func;
+-}
+-
+ std::shared_ptr<ScalarAggregateFunction> AddSkewAggKernels() {
+   static const auto default_options = SkewOptions::Defaults();
+-  auto func = std::make_shared<ScalarAggregateFunction>("skew", Arity::Unary(), skew_doc,
++  auto func = std::make_shared<ScalarAggregateFunction>("vendored_skew", Arity::Unary(), skew_doc,
+                                                         &default_options);
+   AddStatisticKernels(StatisticInit<SkewOptions, StatisticType::Skew>, func.get());
+   return func;
+@@ -346,7 +330,7 @@ std::shared_ptr<ScalarAggregateFunction> AddSkewAggKernels() {
+ 
+ std::shared_ptr<ScalarAggregateFunction> AddKurtosisAggKernels() {
+   static const auto default_options = SkewOptions::Defaults();
+-  auto func = std::make_shared<ScalarAggregateFunction>("kurtosis", Arity::Unary(),
++  auto func = std::make_shared<ScalarAggregateFunction>("vendored_kurtosis", Arity::Unary(),
+                                                         kurtosis_doc, &default_options);
+   AddStatisticKernels(StatisticInit<SkewOptions, StatisticType::Kurtosis>, func.get());
+   return func;
+@@ -355,8 +339,6 @@ std::shared_ptr<ScalarAggregateFunction> AddKurtosisAggKernels() {
+ }  // namespace
+ 
+ void RegisterScalarAggregateVariance(FunctionRegistry* registry) {
+-  DCHECK_OK(registry->AddFunction(AddVarianceAggKernels()));
+-  DCHECK_OK(registry->AddFunction(AddStddevAggKernels()));
+   DCHECK_OK(registry->AddFunction(AddSkewAggKernels()));
+   DCHECK_OK(registry->AddFunction(AddKurtosisAggKernels()));
+ }
+diff --git a/cpp/src/arrow/compute/kernels/aggregate_var_std_internal.h b/cpp/src/arrow/compute/kernels/aggregate_var_std_internal.h
+index 962b0db98a..fa91e8c269 100644
+--- a/cpp/src/arrow/compute/kernels/aggregate_var_std_internal.h
++++ b/cpp/src/arrow/compute/kernels/aggregate_var_std_internal.h
+@@ -24,7 +24,7 @@
+ #include <cmath>
+ #include <type_traits>
+ 
+-namespace arrow::compute::internal {
++namespace arrow::compute::internal::vendored {
+ 
+ using arrow::internal::int128_t;
+ 
+@@ -114,7 +114,7 @@ struct Moments {
+   void MergeFrom(int level, const Moments& other) { *this = Merge(level, *this, other); }
+ 
+   static Moments Merge(int level, const Moments& a, const Moments& b) {
+-    using ::arrow::internal::NeumaierSum;
++    using ::arrow::internal::vendored::NeumaierSum;
+ 
+     if (a.count == 0) {
+       return b;
 diff --git a/cpp/src/arrow/compute/kernels/chunked_internal.cc b/cpp/src/arrow/compute/kernels/chunked_internal.cc
 index e72b8e1f5b..abddc53f96 100644
 --- a/cpp/src/arrow/compute/kernels/chunked_internal.cc
@@ -794,6 +911,133 @@ index 9ea4cdfcc5..ff6b2cb840 100644
  
 -}  // namespace arrow::compute::internal
 +}  // namespace arrow::compute::internal::vendored
+diff --git a/cpp/src/arrow/compute/kernels/hash_aggregate_numeric.cc b/cpp/src/arrow/compute/kernels/hash_aggregate_numeric.cc
+index 4a318942af..581f84a4d6 100644
+--- a/cpp/src/arrow/compute/kernels/hash_aggregate_numeric.cc
++++ b/cpp/src/arrow/compute/kernels/hash_aggregate_numeric.cc
+@@ -35,7 +35,7 @@
+ #include "arrow/util/tdigest.h"
+ #include "arrow/visit_type_inline.h"
+ 
+-namespace arrow::compute::internal {
++namespace arrow::compute::internal::vendored {
+ namespace {
+ 
+ // ----------------------------------------------------------------------
+@@ -440,7 +440,7 @@ using arrow::internal::int128_t;
+ template <typename Type>
+ struct GroupedStatisticImpl : public GroupedAggregator {
+   using CType = typename TypeTraits<Type>::CType;
+-  using SumType = typename internal::GetSumType<Type>::SumType;
++  using SumType = typename internal::vendored::GetSumType<Type>::SumType;
+ 
+   // This method is defined solely to make GroupedStatisticImpl instantiable
+   // in ConsumeImpl below. It will be redefined in subclasses.
+@@ -1152,102 +1152,18 @@ void RegisterHashAggregateNumeric(FunctionRegistry* registry) {
+ 
+   {
+     auto func = std::make_shared<HashAggregateFunction>(
+-        "hash_sum", Arity::Binary(), hash_sum_doc, &default_scalar_aggregate_options);
+-    DCHECK_OK(AddHashAggKernels({boolean()}, GroupedSumFactory::Make, func.get()));
+-    DCHECK_OK(AddHashAggKernels(SignedIntTypes(), GroupedSumFactory::Make, func.get()));
+-    DCHECK_OK(AddHashAggKernels(UnsignedIntTypes(), GroupedSumFactory::Make, func.get()));
+-    DCHECK_OK(
+-        AddHashAggKernels(FloatingPointTypes(), GroupedSumFactory::Make, func.get()));
+-    // Type parameters are ignored
+-    DCHECK_OK(AddHashAggKernels({decimal128(1, 1), decimal256(1, 1)},
+-                                GroupedSumFactory::Make, func.get()));
+-    DCHECK_OK(AddHashAggKernels({null()}, GroupedSumFactory::Make, func.get()));
+-    DCHECK_OK(registry->AddFunction(std::move(func)));
+-  }
+-  {
+-    auto func = std::make_shared<HashAggregateFunction>(
+-        "hash_product", Arity::Binary(), hash_product_doc,
+-        &default_scalar_aggregate_options);
+-    DCHECK_OK(AddHashAggKernels({boolean()}, GroupedProductFactory::Make, func.get()));
+-    DCHECK_OK(
+-        AddHashAggKernels(SignedIntTypes(), GroupedProductFactory::Make, func.get()));
+-    DCHECK_OK(
+-        AddHashAggKernels(UnsignedIntTypes(), GroupedProductFactory::Make, func.get()));
+-    DCHECK_OK(
+-        AddHashAggKernels(FloatingPointTypes(), GroupedProductFactory::Make, func.get()));
+-    // Type parameters are ignored
+-    DCHECK_OK(AddHashAggKernels({decimal128(1, 1), decimal256(1, 1)},
+-                                GroupedProductFactory::Make, func.get()));
+-    DCHECK_OK(AddHashAggKernels({null()}, GroupedProductFactory::Make, func.get()));
+-    DCHECK_OK(registry->AddFunction(std::move(func)));
+-  }
+-  {
+-    auto func = std::make_shared<HashAggregateFunction>(
+-        "hash_mean", Arity::Binary(), hash_mean_doc, &default_scalar_aggregate_options);
+-    DCHECK_OK(AddHashAggKernels({boolean()}, GroupedMeanFactory::Make, func.get()));
+-    DCHECK_OK(AddHashAggKernels(SignedIntTypes(), GroupedMeanFactory::Make, func.get()));
+-    DCHECK_OK(
+-        AddHashAggKernels(UnsignedIntTypes(), GroupedMeanFactory::Make, func.get()));
+-    DCHECK_OK(
+-        AddHashAggKernels(FloatingPointTypes(), GroupedMeanFactory::Make, func.get()));
+-    // Type parameters are ignored
+-    DCHECK_OK(AddHashAggKernels({decimal128(1, 1), decimal256(1, 1)},
+-                                GroupedMeanFactory::Make, func.get()));
+-    DCHECK_OK(AddHashAggKernels({null()}, GroupedMeanFactory::Make, func.get()));
+-    DCHECK_OK(registry->AddFunction(std::move(func)));
+-  }
+-  {
+-    auto func = std::make_shared<HashAggregateFunction>(
+-        "hash_stddev", Arity::Binary(), hash_stddev_doc, &default_variance_options);
+-    DCHECK_OK(AddHashAggregateStatisticKernels(
+-        func.get(), MakeGroupedStatisticKernel<GroupedStddevImpl>));
+-    DCHECK_OK(registry->AddFunction(std::move(func)));
+-  }
+-  {
+-    auto func = std::make_shared<HashAggregateFunction>(
+-        "hash_variance", Arity::Binary(), hash_variance_doc, &default_variance_options);
+-    DCHECK_OK(AddHashAggregateStatisticKernels(
+-        func.get(), MakeGroupedStatisticKernel<GroupedVarianceImpl>));
+-    DCHECK_OK(registry->AddFunction(std::move(func)));
+-  }
+-  {
+-    auto func = std::make_shared<HashAggregateFunction>(
+-        "hash_skew", Arity::Binary(), hash_skew_doc, &default_skew_options);
++        "vendored_hash_skew", Arity::Binary(), hash_skew_doc, &default_skew_options);
+     DCHECK_OK(AddHashAggregateStatisticKernels(
+         func.get(), MakeGroupedStatisticKernel<GroupedSkewImpl>));
+     DCHECK_OK(registry->AddFunction(std::move(func)));
+   }
+   {
+     auto func = std::make_shared<HashAggregateFunction>(
+-        "hash_kurtosis", Arity::Binary(), hash_kurtosis_doc, &default_skew_options);
++        "vendored_hash_kurtosis", Arity::Binary(), hash_kurtosis_doc, &default_skew_options);
+     DCHECK_OK(AddHashAggregateStatisticKernels(
+         func.get(), MakeGroupedStatisticKernel<GroupedKurtosisImpl>));
+     DCHECK_OK(registry->AddFunction(std::move(func)));
+   }
+-
+-  HashAggregateFunction* tdigest_func = nullptr;
+-  {
+-    auto func = std::make_shared<HashAggregateFunction>(
+-        "hash_tdigest", Arity::Binary(), hash_tdigest_doc, &default_tdigest_options);
+-    DCHECK_OK(
+-        AddHashAggKernels(SignedIntTypes(), GroupedTDigestFactory::Make, func.get()));
+-    DCHECK_OK(
+-        AddHashAggKernels(UnsignedIntTypes(), GroupedTDigestFactory::Make, func.get()));
+-    DCHECK_OK(
+-        AddHashAggKernels(FloatingPointTypes(), GroupedTDigestFactory::Make, func.get()));
+-    // Type parameters are ignored
+-    DCHECK_OK(AddHashAggKernels({decimal128(1, 1), decimal256(1, 1)},
+-                                GroupedTDigestFactory::Make, func.get()));
+-    tdigest_func = func.get();
+-    DCHECK_OK(registry->AddFunction(std::move(func)));
+-  }
+-  {
+-    auto func = std::make_shared<HashAggregateFunction>(
+-        "hash_approximate_median", Arity::Binary(), hash_approximate_median_doc,
+-        &default_scalar_aggregate_options);
+-    DCHECK_OK(func->AddKernel(MakeApproximateMedianKernel(tdigest_func)));
+-    DCHECK_OK(registry->AddFunction(std::move(func)));
+-  }
+ }
+ 
+ }  // namespace arrow::compute::internal
 diff --git a/cpp/src/arrow/compute/kernels/hash_aggregate_pivot.cc b/cpp/src/arrow/compute/kernels/hash_aggregate_pivot.cc
 index c3dc070e4f..3c271ea64e 100644
 --- a/cpp/src/arrow/compute/kernels/hash_aggregate_pivot.cc
