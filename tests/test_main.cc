@@ -33,6 +33,13 @@ std::shared_ptr<arrow::Table> GetTable(std::shared_ptr<arrow::Array>& value_arra
     return arrow::Table::Make(schema, {values_chunks, keys_chunks}, 3);
 }
 
+std::shared_ptr<arrow::Table> GetTable2(std::shared_ptr<arrow::Array>& value_array) {
+    auto schema = arrow::schema({arrow::field("Value", arrow::int32())});
+    std::shared_ptr<arrow::ChunkedArray> values_chunks =
+        std::make_shared<arrow::ChunkedArray>(arrow::ArrayVector{value_array});
+    return arrow::Table::Make(schema, {values_chunks}, 3);
+}
+
 int main() {
     std::cout << "Starting validation for kernel-loader" << std::endl;
     std::shared_ptr<arrow::Array> arr;
@@ -93,5 +100,31 @@ int main() {
    arrow::MemoryPool* memory_pool = arrow::default_memory_pool();
    result = arrow::acero::DeclarationToTable(std::move(plan), use_threads, memory_pool);
    std::cout << "vendored_hash_pivot_wider: " <<  result->ToString() << std::endl;
+
+   arrow::compute::internal::vendored::SkewOptions skew_options = arrow::compute::internal::vendored::SkewOptions::Defaults();
+   result = arrow::compute::CallFunction("vendored_skew", {datums}, &skew_options);
+   if (!result.ok()) {
+       std::cerr << "Failed to call function: " << result.status().ToString() << std::endl;
+       return -1;
+   }
+   std::cout << "vendored_skew: " << result->ToString() << std::endl;
+   result = arrow::compute::CallFunction("vendored_kurtosis", {datums}, &skew_options);
+   if (!result.ok()) {
+       std::cerr << "Failed to call function: " << result.status().ToString() << std::endl;
+       return -1;
+   }
+   std::cout << "vendored_kurtosis: " << result->ToString() << std::endl;
+
+   arrow::compute::Aggregate aggregates2{"vendored_hash_skew", std::make_shared<arrow::compute::internal::vendored::SkewOptions>(skew_options),
+       /*target=*/std::vector<arrow::FieldRef>{"Value"}, /*name=*/"out"};
+
+   arrow::acero::AggregateNodeOptions aggregate_node_options2{{aggregates2}, key_refs};
+   std::shared_ptr<arrow::Table> table2 = GetTable2(arr);
+   arrow::acero::Declaration plan2 = arrow::acero::Declaration::Sequence(
+       {{"table_source", arrow::acero::TableSourceNodeOptions(std::move(table2))},
+        {"aggregate", aggregate_node_options2}});
+    result = arrow::acero::DeclarationToTable(std::move(plan2), use_threads, memory_pool);
+    std::cout << "vendored_hash_skew: " <<  result->ToString() << std::endl;
+
    return 0;
 }

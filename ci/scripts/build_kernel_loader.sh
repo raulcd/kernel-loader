@@ -61,6 +61,10 @@ mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/pivot_internal.h arrow_v
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/aggregate_basic.cc arrow_vendored/cpp/src/arrow/compute/kernels/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/aggregate_basic.inc.cc arrow_vendored/cpp/src/arrow/compute/kernels/
 mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/aggregate_basic_internal.h arrow_vendored/cpp/src/arrow/compute/kernels/
+# Skew and kurtosis kernels
+mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/aggregate_var_std.cc arrow_vendored/cpp/src/arrow/compute/kernels/
+mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/aggregate_var_std_internal.h arrow_vendored/cpp/src/arrow/compute/kernels/
+mv arrow_tmp/arrow-${sha}/cpp/src/arrow/compute/kernels/hash_aggregate_numeric.cc arrow_vendored/cpp/src/arrow/compute/kernels/
 # Build the kernel loader
 cmake \
     -DCMAKE_INSTALL_PREFIX=/tmp/kernel-loader \
