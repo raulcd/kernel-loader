@@ -3,7 +3,9 @@
 #include "load_kernels.h"
 #include "arrow/compute/kernels/vector_rank.h"
 #include "arrow/compute/kernels/aggregate_pivot.h"
+#include "arrow/compute/kernels/aggregate_var_std.h"
 #include "arrow/compute/kernels/hash_aggregate_pivot.h"
+#include "arrow/compute/kernels/hash_aggregate_numeric.h"
 
 namespace arrow::compute::internal::vendored {
 
@@ -42,6 +44,8 @@ namespace arrow::compute::internal::vendored {
             RegisterVectorRank(registry);
             RegisterScalarAggregatePivot(registry);
             RegisterHashAggregatePivot(registry);
+            RegisterScalarAggregateVariance(registry);
+            RegisterHashAggregateNumeric(registry);
 
             return arrow::Status::OK();
         }

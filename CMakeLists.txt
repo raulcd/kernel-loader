@@ -25,6 +25,8 @@ add_library(arrow_kernel_loader SHARED
         ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/kernels/pivot_internal.cc
         ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/kernels/aggregate_pivot.cc
         ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/kernels/aggregate_basic.cc
+        ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/kernels/aggregate_var_std.cc
+        ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/kernels/hash_aggregate_numeric.cc
         ${CMAKE_BINARY_DIR}/arrow_vendored/cpp/src/arrow/compute/kernels/hash_aggregate_pivot.cc
         src/load_kernels.cc)
 
