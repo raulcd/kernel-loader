@@ -1,5 +1,5 @@
 diff --git a/cpp/src/arrow/compute/api_aggregate.cc b/cpp/src/arrow/compute/api_aggregate.cc
-index 20d3ce2faf..571310d23b 100644
+index 4cd78a296a..e73500d817 100644
 --- a/cpp/src/arrow/compute/api_aggregate.cc
 +++ b/cpp/src/arrow/compute/api_aggregate.cc
 @@ -25,19 +25,20 @@
@@ -108,7 +108,7 @@ index 20d3ce2faf..571310d23b 100644
  static auto kScalarAggregateOptionsType = GetFunctionOptionsType<ScalarAggregateOptions>(
      DataMember("skip_nulls", &ScalarAggregateOptions::skip_nulls),
      DataMember("min_count", &ScalarAggregateOptions::min_count));
-@@ -128,47 +129,46 @@ static auto kPivotOptionsType = GetFunctionOptionsType<PivotWiderOptions>(
+@@ -129,48 +130,47 @@ static auto kPivotOptionsType = GetFunctionOptionsType<PivotWiderOptions>(
  static auto kIndexOptionsType =
      GetFunctionOptionsType<IndexOptions>(DataMember("value", &IndexOptions::value));
  }  // namespace
@@ -142,10 +142,11 @@ index 20d3ce2faf..571310d23b 100644
        min_count(min_count) {}
  constexpr char VarianceOptions::kTypeName[];
  
- SkewOptions::SkewOptions(bool skip_nulls, uint32_t min_count)
+ SkewOptions::SkewOptions(bool skip_nulls, bool biased, uint32_t min_count)
 -    : FunctionOptions(internal::kSkewOptionsType),
 +    : FunctionOptions(kSkewOptionsType),
        skip_nulls(skip_nulls),
+       biased(biased),
        min_count(min_count) {}
  
  QuantileOptions::QuantileOptions(double q, enum Interpolation interpolation,
@@ -163,7 +164,7 @@ index 20d3ce2faf..571310d23b 100644
        q{std::move(q)},
        interpolation{interpolation},
        skip_nulls{skip_nulls},
-@@ -177,7 +177,7 @@ constexpr char QuantileOptions::kTypeName[];
+@@ -179,7 +179,7 @@ constexpr char QuantileOptions::kTypeName[];
  
  TDigestOptions::TDigestOptions(double q, uint32_t delta, uint32_t buffer_size,
                                 bool skip_nulls, uint32_t min_count)
@@ -172,7 +173,7 @@ index 20d3ce2faf..571310d23b 100644
        q{q},
        delta{delta},
        buffer_size{buffer_size},
-@@ -185,7 +185,7 @@ TDigestOptions::TDigestOptions(double q, uint32_t delta, uint32_t buffer_size,
+@@ -187,7 +187,7 @@ TDigestOptions::TDigestOptions(double q, uint32_t delta, uint32_t buffer_size,
        min_count{min_count} {}
  TDigestOptions::TDigestOptions(std::vector<double> q, uint32_t delta,
                                 uint32_t buffer_size, bool skip_nulls, uint32_t min_count)
@@ -181,7 +182,7 @@ index 20d3ce2faf..571310d23b 100644
        q{std::move(q)},
        delta{delta},
        buffer_size{buffer_size},
-@@ -195,17 +195,16 @@ constexpr char TDigestOptions::kTypeName[];
+@@ -197,17 +197,16 @@ constexpr char TDigestOptions::kTypeName[];
  
  PivotWiderOptions::PivotWiderOptions(std::vector<std::string> key_names,
                                       UnexpectedKeyBehavior unexpected_key_behavior)
@@ -202,7 +203,7 @@ index 20d3ce2faf..571310d23b 100644
  void RegisterAggregateOptions(FunctionRegistry* registry) {
    DCHECK_OK(registry->AddFunctionOptionsType(kScalarAggregateOptionsType));
    DCHECK_OK(registry->AddFunctionOptionsType(kCountOptionsType));
-@@ -217,7 +216,6 @@ void RegisterAggregateOptions(FunctionRegistry* registry) {
+@@ -219,7 +218,6 @@ void RegisterAggregateOptions(FunctionRegistry* registry) {
    DCHECK_OK(registry->AddFunctionOptionsType(kPivotOptionsType));
    DCHECK_OK(registry->AddFunctionOptionsType(kIndexOptionsType));
  }
@@ -210,7 +211,7 @@ index 20d3ce2faf..571310d23b 100644
  
  // ----------------------------------------------------------------------
  // Scalar aggregates
-@@ -302,5 +300,6 @@ Result<Datum> Index(const Datum& value, const IndexOptions& options, ExecContext
+@@ -304,5 +302,6 @@ Result<Datum> Index(const Datum& value, const IndexOptions& options, ExecContext
    return CallFunction("index", {value}, &options, ctx);
  }
  
@@ -218,7 +219,7 @@ index 20d3ce2faf..571310d23b 100644
  }  // namespace compute
  }  // namespace arrow
 diff --git a/cpp/src/arrow/compute/api_aggregate.h b/cpp/src/arrow/compute/api_aggregate.h
-index 61bab4cdb8..d61bec2e29 100644
+index 1d9076f6ba..3603975576 100644
 --- a/cpp/src/arrow/compute/api_aggregate.h
 +++ b/cpp/src/arrow/compute/api_aggregate.h
 @@ -36,6 +36,7 @@ namespace compute {
@@ -229,7 +230,7 @@ index 61bab4cdb8..d61bec2e29 100644
  // ----------------------------------------------------------------------
  // Aggregate functions
  
-@@ -585,6 +586,6 @@ Result<Datum> TDigest(const Datum& value,
+@@ -590,6 +591,6 @@ Result<Datum> TDigest(const Datum& value,
  ARROW_EXPORT
  Result<Datum> Index(const Datum& value, const IndexOptions& options,
                      ExecContext* ctx = NULLPTR);
@@ -238,7 +239,7 @@ index 61bab4cdb8..d61bec2e29 100644
  }  // namespace compute
  }  // namespace arrow
 diff --git a/cpp/src/arrow/compute/api_vector.cc b/cpp/src/arrow/compute/api_vector.cc
-index 53ceed1b08..da356ef3fc 100644
+index 012e403e70..05e58e4f21 100644
 --- a/cpp/src/arrow/compute/api_vector.cc
 +++ b/cpp/src/arrow/compute/api_vector.cc
 @@ -42,13 +42,13 @@ namespace arrow {
@@ -271,7 +272,7 @@ index 53ceed1b08..da356ef3fc 100644
  static auto kFilterOptionsType = GetFunctionOptionsType<FilterOptions>(
      DataMember("null_selection_behavior", &FilterOptions::null_selection_behavior));
  static auto kTakeOptionsType = GetFunctionOptionsType<TakeOptions>(
-@@ -166,67 +167,66 @@ static auto kInversePermutationOptionsType =
+@@ -169,72 +170,71 @@ static auto kInversePermutationOptionsType =
  static auto kScatterOptionsType = GetFunctionOptionsType<ScatterOptions>(
      DataMember("max_index", &ScatterOptions::max_index));
  }  // namespace
@@ -325,6 +326,12 @@ index 53ceed1b08..da356ef3fc 100644
        null_placement(null_placement) {}
  constexpr char PartitionNthOptions::kTypeName[];
  
+ WinsorizeOptions::WinsorizeOptions(double lower_limit, double upper_limit)
+-    : FunctionOptions(internal::kWinsorizeOptionsType),
++    : FunctionOptions(kWinsorizeOptionsType),
+       lower_limit(lower_limit),
+       upper_limit(upper_limit) {}
+ 
  SelectKOptions::SelectKOptions(int64_t k, std::vector<SortKey> sort_keys)
 -    : FunctionOptions(internal::kSelectKOptionsType),
 +    : FunctionOptions(kSelectKOptionsType),
@@ -351,7 +358,7 @@ index 53ceed1b08..da356ef3fc 100644
        sort_keys(std::move(sort_keys)),
        null_placement(null_placement),
        tiebreaker(tiebreaker) {}
-@@ -234,28 +234,28 @@ constexpr char RankOptions::kTypeName[];
+@@ -242,28 +242,28 @@ constexpr char RankOptions::kTypeName[];
  
  RankQuantileOptions::RankQuantileOptions(std::vector<SortKey> sort_keys,
                                           NullPlacement null_placement)
@@ -385,7 +392,7 @@ index 53ceed1b08..da356ef3fc 100644
  constexpr char ScatterOptions::kTypeName[];
  
  namespace internal {
-@@ -473,6 +473,7 @@ Result<Datum> Scatter(const Datum& values, const Datum& indices,
+@@ -482,6 +482,7 @@ Result<Datum> Scatter(const Datum& values, const Datum& indices,
                        const ScatterOptions& options, ExecContext* ctx) {
    return CallFunction("scatter", {values, indices}, &options, ctx);
  }
@@ -395,7 +402,7 @@ index 53ceed1b08..da356ef3fc 100644
  }  // namespace compute
  }  // namespace arrow
 diff --git a/cpp/src/arrow/compute/api_vector.h b/cpp/src/arrow/compute/api_vector.h
-index 22bb164719..1bcc2362cc 100644
+index 69e4b243c9..6fd7c62431 100644
 --- a/cpp/src/arrow/compute/api_vector.h
 +++ b/cpp/src/arrow/compute/api_vector.h
 @@ -30,6 +30,8 @@ namespace compute {
@@ -407,7 +414,7 @@ index 22bb164719..1bcc2362cc 100644
  /// \addtogroup compute-concrete-options
  /// @{
  
-@@ -811,5 +813,6 @@ Result<Datum> Scatter(const Datum& values, const Datum& indices,
+@@ -830,5 +832,6 @@ Result<Datum> Scatter(const Datum& values, const Datum& indices,
                        const ScatterOptions& options = ScatterOptions::Defaults(),
                        ExecContext* ctx = NULLPTR);
  
@@ -675,7 +682,7 @@ index 23aa20eddc..6425821399 100644
  };
  
 diff --git a/cpp/src/arrow/compute/kernels/aggregate_pivot.cc b/cpp/src/arrow/compute/kernels/aggregate_pivot.cc
-index bcc2f53ac1..47c11ec8bf 100644
+index 3ff6327ec9..bfa66cc696 100644
 --- a/cpp/src/arrow/compute/kernels/aggregate_pivot.cc
 +++ b/cpp/src/arrow/compute/kernels/aggregate_pivot.cc
 @@ -23,7 +23,7 @@
@@ -687,7 +694,7 @@ index bcc2f53ac1..47c11ec8bf 100644
  namespace {
  
  using arrow::internal::VisitSetBitRunsVoid;
-@@ -175,7 +175,7 @@ void RegisterScalarAggregatePivot(FunctionRegistry* registry) {
+@@ -178,7 +178,7 @@ void RegisterScalarAggregatePivot(FunctionRegistry* registry) {
    static auto default_pivot_options = PivotWiderOptions::Defaults();
  
    auto func = std::make_shared<ScalarAggregateFunction>(
@@ -749,7 +756,7 @@ index 0fd9cae7a8..c7f8c30b74 100644
  }  // namespace compute
  }  // namespace arrow
 diff --git a/cpp/src/arrow/compute/kernels/codegen_internal.h b/cpp/src/arrow/compute/kernels/codegen_internal.h
-index 2a492f581f..09faca119f 100644
+index 1d49579a5a..71863a2319 100644
 --- a/cpp/src/arrow/compute/kernels/codegen_internal.h
 +++ b/cpp/src/arrow/compute/kernels/codegen_internal.h
 @@ -63,6 +63,7 @@ using internal::VisitTwoBitBlocksVoid;
@@ -760,7 +767,7 @@ index 2a492f581f..09faca119f 100644
  
  /// KernelState adapter for the common case of kernels whose only
  /// state is an instance of a subclass of FunctionOptions.
-@@ -1449,6 +1450,7 @@ void PromoteIntegerForDurationArithmetic(std::vector<TypeHolder>* types);
+@@ -1450,6 +1451,7 @@ void PromoteIntegerForDurationArithmetic(std::vector<TypeHolder>* types);
  
  // END of DispatchBest helpers
  // ----------------------------------------------------------------------

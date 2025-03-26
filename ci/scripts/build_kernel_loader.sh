@@ -10,7 +10,7 @@ pushd ${build_dir}
 mkdir arrow_tmp
 pushd arrow_tmp
 
-sha="42b215bcaf842eba5adc9c983f69e15f995b7e12"
+sha="026a933fd15fdd2b0bf0b1ae21dbf4f9dd5c8d85"
 
 # Download Arrow source code
 url="https://github.com/apache/arrow/archive/${sha}.zip"
